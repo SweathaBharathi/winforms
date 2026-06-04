@@ -3188,6 +3188,9 @@ public partial class Form : ContainerControl
         {
             FormClosingEventArgs e = new(_closeReason, false);
 
+            // Track whether we fired the closing events in this call
+            bool firedClosingInThisCall = false;
+
             if (!CalledClosing)
             {
 #pragma warning disable WFDEV004 // Type or member is obsolete - compat
@@ -3203,16 +3206,22 @@ public partial class Form : ContainerControl
                     // we have called closing here, and it wasn't cancelled, so we're expecting a close
                     // call again soon.
                     CalledClosing = true;
+                    firedClosingInThisCall = true;
                 }
             }
 
             if (!closingOnly && _dialogResult != DialogResult.None)
             {
-                FormClosedEventArgs fc = new(_closeReason);
+                // Only fire FormClosed if WE fired the closing events in this call
+                // This prevents duplicate FormClosed events when parent form already fired both events in WmClose
+                if (firedClosingInThisCall)
+                {
+                    FormClosedEventArgs fc = new(_closeReason);
 #pragma warning disable WFDEV004 // Type or member is obsolete - compat
-                OnClosed(fc);
+                    OnClosed(fc);
 #pragma warning restore WFDEV004
-                OnFormClosed(fc);
+                    OnFormClosed(fc);
+                }
 
                 // reset called closing.
                 //
@@ -6793,6 +6802,8 @@ public partial class Form : ContainerControl
                         if (mdiChild.IsHandleCreated)
                         {
                             mdiChild.IsTopMdiWindowClosing = IsClosing;
+                            // Mark that closing phase is done to prevent CheckCloseDialog from firing events again
+                            mdiChild.CalledClosing = true;
 #pragma warning disable WFDEV004 // Type or member is obsolete - compat
                             mdiChild.OnClosed(fc);
 #pragma warning restore WFDEV004
@@ -6807,6 +6818,8 @@ public partial class Form : ContainerControl
                     for (int i = ownedForms.Count - 1; i >= 0; i--)
                     {
                         fc = new FormClosedEventArgs(CloseReason.FormOwnerClosing);
+                        // Mark that closing phase is done to prevent CheckCloseDialog from firing events again
+                        ownedForms[i].CalledClosing = true;
                         // Call OnClosed and OnFormClosed on the child forms.
 #pragma warning disable WFDEV004 // Type or member is obsolete - compat
                         ownedForms[i].OnClosed(fc);
