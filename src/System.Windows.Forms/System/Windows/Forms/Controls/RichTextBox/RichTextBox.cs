@@ -3422,6 +3422,33 @@ public partial class RichTextBox : TextBoxBase
         InternalSetForeColor(ForeColor);
     }
 
+    private TextFormatFlags CreateDisabledDarkModeTextFlags()
+    {
+        TextFormatFlags flags =
+            TextFormatFlags.TextBoxControl |
+            TextFormatFlags.NoPrefix;
+
+        if (RightToLeft == RightToLeft.Yes)
+        {
+            flags |= TextFormatFlags.RightToLeft | TextFormatFlags.Right;
+        }
+
+        if (Multiline)
+        {
+            if (WordWrap)
+            {
+                flags |= TextFormatFlags.WordBreak;
+            }
+        }
+        else
+        {
+            flags |= TextFormatFlags.SingleLine;
+        }
+
+        return flags;
+    }
+
+
     protected override unsafe void WndProc(ref Message m)
     {
         switch (m.MsgInternal)
@@ -3445,17 +3472,17 @@ public partial class RichTextBox : TextBoxBase
                     // Paint the background
                     g.FillRectangle(SystemBrushes.ControlDark, ClientRectangle);
 
-                    // Paint the text
+                    RECT textRect = default;
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_GETRECT, (WPARAM)0, ref textRect);
+                    Rectangle textBounds = textRect;
+
                     TextRenderer.DrawText(
                         g,
                         Text,
                         Font,
-                        ClientRectangle,
+                        textBounds,
                         SystemColors.GrayText,
-                        TextFormatFlags.Left
-                        | TextFormatFlags.Top
-                        | TextFormatFlags.WordBreak
-                        | TextFormatFlags.EndEllipsis);
+                        CreateDisabledDarkModeTextFlags());
 
                     return;
                 }
