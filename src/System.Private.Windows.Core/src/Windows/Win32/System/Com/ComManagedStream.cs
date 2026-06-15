@@ -124,6 +124,8 @@ internal sealed unsafe partial class ComManagedStream : IStream.Interface
             return HRESULT.STG_E_INVALIDPOINTER;
         }
 
+        ActualizeVirtualPosition();
+
         Span<byte> destination = new(pv, checked((int)cb));
         int totalRead = 0;
 
