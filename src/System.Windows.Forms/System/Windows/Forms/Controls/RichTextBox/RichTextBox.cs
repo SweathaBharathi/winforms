@@ -658,11 +658,11 @@ public partial class RichTextBox : TextBoxBase
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [SRDescription(nameof(SR.RichTextBoxSelAlignment))]
-    public unsafe HorizontalAlignment SelectionAlignment
+    public unsafe ParagraphAlignment SelectionAlignment
     {
         get
         {
-            HorizontalAlignment selectionAlignment = HorizontalAlignment.Left;
+            ParagraphAlignment selectionAlignment = ParagraphAlignment.Left;
 
             ForceHandleCreate();
             PARAFORMAT pf = new()
@@ -679,15 +679,15 @@ public partial class RichTextBox : TextBoxBase
                 switch (pf.wAlignment)
                 {
                     case PFA.LEFT:
-                        selectionAlignment = HorizontalAlignment.Left;
+                        selectionAlignment = ParagraphAlignment.Left;
                         break;
 
                     case PFA.RIGHT:
-                        selectionAlignment = HorizontalAlignment.Right;
+                        selectionAlignment = ParagraphAlignment.Right;
                         break;
 
                     case PFA.CENTER:
-                        selectionAlignment = HorizontalAlignment.Center;
+                        selectionAlignment = ParagraphAlignment.Center;
                         break;
                 }
             }
@@ -708,16 +708,20 @@ public partial class RichTextBox : TextBoxBase
 
             switch (value)
             {
-                case HorizontalAlignment.Left:
+                case ParagraphAlignment.Left:
                     pf.wAlignment = PFA.LEFT;
                     break;
 
-                case HorizontalAlignment.Right:
+                case ParagraphAlignment.Right:
                     pf.wAlignment = PFA.RIGHT;
                     break;
 
-                case HorizontalAlignment.Center:
+                case ParagraphAlignment.Center:
                     pf.wAlignment = PFA.CENTER;
+                    break;
+
+                case ParagraphAlignment.Justified:
+                    pf.wAlignment = PFA.JUSTIFY;
                     break;
             }
 
