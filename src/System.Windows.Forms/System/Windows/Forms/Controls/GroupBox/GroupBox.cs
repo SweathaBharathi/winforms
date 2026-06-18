@@ -21,6 +21,7 @@ public partial class GroupBox : Control
     private int _fontHeight = -1;
     private Font? _cachedFont;
     private FlatStyle _flatStyle = FlatStyle.Standard;
+    private BorderStyle _borderStyle = BorderStyle.FixedSingle;
 
     /// <summary>
     ///  Initializes a new instance of the <see cref="GroupBox"/> class.
@@ -104,6 +105,25 @@ public partial class GroupBox : Control
                 }
 
                 LayoutTransaction.DoLayout(ParentInternal, this, PropertyNames.AutoSize);
+            }
+        }
+    }
+
+    [DefaultValue(BorderStyle.FixedSingle)]
+    [Browsable(true)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+    public BorderStyle BorderStyle
+    {
+        get => _borderStyle;
+        set
+        {
+            SourceGenerated.EnumValidator.Validate(value);
+
+            if (_borderStyle != value)
+            {
+                _borderStyle = value;
+                Invalidate();
+                UpdateStyles();
             }
         }
     }
@@ -395,62 +415,155 @@ public partial class GroupBox : Control
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        // BACKCOMPAT requirement:
-        //
-        // Why the Height/Width < 10 check? This is because uxtheme doesn't seem to handle those cases similar to
-        // what we do for the non-themed case, so if someone is using the groupbox as a separator, their app will
-        // look weird in .NET Framework 2.0. We render the old way in these cases.
-
-        if (!Application.RenderWithVisualStyles || Width < 10 || Height < 10)
+        if (BorderStyle == BorderStyle.FixedSingle)
         {
-            DrawGroupBox(e);
-        }
-        else
-        {
-            GroupBoxState gbState = Enabled ? GroupBoxState.Normal : GroupBoxState.Disabled;
-            TextFormatFlags textFlags = TextFormatFlags.TextBoxControl | TextFormatFlags.WordBreak
-                | TextFormatFlags.PreserveGraphicsTranslateTransform | TextFormatFlags.PreserveGraphicsClipping;
+            // BACKCOMPAT requirement:
+            //
+            // Why the Height/Width < 10 check? This is because uxtheme doesn't seem to handle those cases similar to
+            // what we do for the non-themed case, so if someone is using the groupbox as a separator, their app will
+            // look weird in .NET Framework 2.0. We render the old way in these cases.
 
-            if (!ShowKeyboardCues)
+            if (!Application.RenderWithVisualStyles || Width < 10 || Height < 10)
             {
-                textFlags |= TextFormatFlags.HidePrefix;
-            }
-
-            if (RightToLeft == RightToLeft.Yes)
-            {
-                textFlags |= (TextFormatFlags.Right | TextFormatFlags.RightToLeft);
-            }
-
-            // We only pass in the text color if it is explicitly set, else we let the renderer use the color
-            // specified by the theme. This is a temporary workaround till we find a good solution for the
-            // "default theme color" issue.
-
-            if (ShouldSerializeForeColor() || Application.IsDarkModeEnabled || !Enabled)
-            {
-                Color textColor = Enabled ? ForeColor : TextRenderer.DisabledTextColor(BackColor);
-
-                GroupBoxRenderer.DrawGroupBox(
-                    e,
-                    new Rectangle(0, 0, Width, Height),
-                    Text,
-                    Font,
-                    textColor,
-                    textFlags,
-                    gbState);
+                DrawGroupBox(e);
             }
             else
             {
-                GroupBoxRenderer.DrawGroupBox(
-                    e,
-                    new Rectangle(0, 0, Width, Height),
-                    Text,
-                    Font,
-                    textFlags,
-                    gbState);
+                GroupBoxState gbState = Enabled ? GroupBoxState.Normal : GroupBoxState.Disabled;
+                TextFormatFlags textFlags = TextFormatFlags.TextBoxControl
+                    | TextFormatFlags.WordBreak
+                    | TextFormatFlags.PreserveGraphicsTranslateTransform
+                    | TextFormatFlags.PreserveGraphicsClipping;
+
+                if (!ShowKeyboardCues)
+                {
+                    textFlags |= TextFormatFlags.HidePrefix;
+                }
+
+                if (RightToLeft == RightToLeft.Yes)
+                {
+                    textFlags |= TextFormatFlags.Right | TextFormatFlags.RightToLeft;
+                }
+
+                // We only pass in the text color if it is explicitly set, else we let the renderer use the color
+                // specified by the theme. This is a temporary workaround till we find a good solution for the
+                // "default theme color" issue.
+
+                if (ShouldSerializeForeColor() || Application.IsDarkModeEnabled || !Enabled)
+                {
+                    Color textColor = Enabled ? ForeColor : TextRenderer.DisabledTextColor(BackColor);
+
+                    GroupBoxRenderer.DrawGroupBox(
+                        e,
+                        new Rectangle(0, 0, Width, Height),
+                        Text,
+                        Font,
+                        textColor,
+                        textFlags,
+                        gbState);
+                }
+                else
+                {
+                    GroupBoxRenderer.DrawGroupBox(
+                        e,
+                        new Rectangle(0, 0, Width, Height),
+                        Text,
+                        Font,
+                        textFlags,
+                        gbState);
+                }
             }
+
+            base.OnPaint(e); // raise paint event
+            return;
+        }
+
+        if (BorderStyle == BorderStyle.None)
+        {
+            DrawBorderlessGroupBox(e);
+        }
+        else if (BorderStyle == BorderStyle.Fixed3D)
+        {
+            Draw3DGroupBox(e);
         }
 
         base.OnPaint(e); // raise paint event
+    }
+
+    private void DrawBorderlessGroupBox(PaintEventArgs e)
+    {
+        e.Graphics.Clear(Parent?.BackColor ?? BackColor);
+
+        Rectangle textRect = new Rectangle(8, 0, Width - 16, Font.Height + 4);
+
+        TextFormatFlags flags = TextFormatFlags.TextBoxControl | TextFormatFlags.WordBreak;
+
+        if (!ShowKeyboardCues)
+        {
+            flags |= TextFormatFlags.HidePrefix;
+        }
+
+        if (RightToLeft == RightToLeft.Yes)
+        {
+            flags |= TextFormatFlags.Right | TextFormatFlags.RightToLeft;
+        }
+
+        Color textColor = Enabled ? ForeColor : TextRenderer.DisabledTextColor(BackColor);
+
+        TextRenderer.DrawText(e.Graphics, Text, Font, textRect, textColor, flags);
+    }
+
+    private void Draw3DGroupBox(PaintEventArgs e)
+    {
+        e.Graphics.Clear(Parent?.BackColor ?? BackColor);
+
+        Rectangle textRect = new Rectangle(8, 0, Width - 16, Font.Height + 4);
+
+        TextFormatFlags flags = TextFormatFlags.TextBoxControl | TextFormatFlags.WordBreak;
+
+        if (!ShowKeyboardCues)
+        {
+            flags |= TextFormatFlags.HidePrefix;
+        }
+
+        if (RightToLeft == RightToLeft.Yes)
+        {
+            flags |= TextFormatFlags.Right | TextFormatFlags.RightToLeft;
+        }
+
+        Color textColor = Enabled ? ForeColor : TextRenderer.DisabledTextColor(BackColor);
+
+        Size textSize = TextRenderer.MeasureText(e.Graphics, Text, Font, textRect.Size, flags);
+
+        int textLeft = 8;
+        if (RightToLeft == RightToLeft.Yes)
+        {
+            textLeft = Width - 8 - textSize.Width;
+        }
+
+        Rectangle realTextRect = new Rectangle(textLeft, 0, textSize.Width, textSize.Height);
+
+        // draw text first
+        TextRenderer.DrawText(e.Graphics, Text, Font, realTextRect, textColor, flags);
+
+        // draw 3D border below the caption
+        Rectangle borderRect = ClientRectangle;
+        borderRect.Y += Font.Height / 2;
+        borderRect.Height -= Font.Height / 2;
+        borderRect.Width -= 1;
+        borderRect.Height -= 1;
+
+        ControlPaint.DrawBorder3D(e.Graphics, borderRect, Border3DStyle.Etched);
+
+        // clear the top middle part so border does not cross the caption
+        Rectangle gapRect = new Rectangle(realTextRect.X - 2, borderRect.Y - 1, realTextRect.Width + 4, realTextRect.Height);
+        using (SolidBrush backBrush = new SolidBrush(Parent?.BackColor ?? BackColor))
+        {
+            e.Graphics.FillRectangle(backBrush, gapRect);
+        }
+
+        // redraw text after clearing gap
+        TextRenderer.DrawText(e.Graphics, Text, Font, realTextRect, textColor, flags);
     }
 
     private void DrawGroupBox(PaintEventArgs e)
