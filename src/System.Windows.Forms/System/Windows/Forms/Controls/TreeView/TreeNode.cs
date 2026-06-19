@@ -25,6 +25,7 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
     private const TREE_VIEW_ITEM_STATE_FLAGS CHECKED = (TREE_VIEW_ITEM_STATE_FLAGS)(2 << SHIFTVAL);
     private const TREE_VIEW_ITEM_STATE_FLAGS UNCHECKED = (TREE_VIEW_ITEM_STATE_FLAGS)(1 << SHIFTVAL);
     private const int ALLOWEDIMAGES = 14;
+    private const int TREENODESTATE_isBold = 0x00000002;
 
     // the threshold value used to optimize AddRange and Clear operations for a big number of nodes
     internal const int MAX_TREENODES_OPS = 200;
@@ -165,6 +166,39 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
         : this()
     {
         Deserialize(serializationInfo, context);
+    }
+
+    /// <summary>
+    ///  Gets or sets a value indicating whether the tree node label is displayed in bold.
+    /// </summary>
+    [SRCategory(nameof(SR.CatAppearance))]
+    [DefaultValue(false)]
+    [Browsable(true)]
+    public bool IsBold
+    {
+        get => _treeNodeState[TREENODESTATE_isBold];
+        set
+        {
+
+            TreeView tv = TreeView;
+
+            if (tv is null || _treeNodeState[TREENODESTATE_isBold] == value)
+            {
+                return;
+            }
+
+            _treeNodeState[TREENODESTATE_isBold] = value;
+
+            TVITEMW item = new()
+            {
+                mask = TVITEM_MASK.TVIF_STATE,
+                hItem = (HTREEITEM)Handle,
+                stateMask = TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD,
+                state = value ? TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD : 0
+            };
+
+            PInvokeCore.SendMessage(tv, PInvoke.TVM_SETITEMW, 0, ref item);
+        }
     }
 
     /// <summary>
