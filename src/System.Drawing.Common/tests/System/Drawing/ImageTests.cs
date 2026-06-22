@@ -695,7 +695,98 @@ public class ImageTests
         using Image image2 = Image.FromStream(new NonSeekableStreamWrapper(stream));
     }
 
-    public class NonSeekableStreamWrapper : Stream
+    [Fact]
+    public void FromStream_SeekableStreamWithPartialReads_Success()
+    {
+        using Bitmap source = new(16, 16);
+
+        // Make sure the image has some actual content.
+        for (int y = 0; y < source.Height; y++)
+        {
+            for (int x = 0; x < source.Width; x++)
+            {
+                source.SetPixel(x, y, Color.FromArgb((x * 17) % 255, (y * 31) % 255, (x + y * 7) % 255));
+            }
+        }
+
+        byte[] imageBytes;
+        using (MemoryStream saveStream = new())
+        {
+            source.Save(saveStream, ImageFormat.Png);
+            imageBytes = saveStream.ToArray();
+        }
+
+        using ChunkedReadStream stream = new(new MemoryStream(imageBytes), maxBytesPerRead: 1);
+        using Image image = Image.FromStream(stream);
+
+        Assert.Equal(source.Width, image.Width);
+        Assert.Equal(source.Height, image.Height);
+        Assert.True(stream.ReadCallCount > 1);
+    }
+
+    private sealed class ChunkedReadStream : Stream
+    {
+        private readonly Stream _inner;
+        private readonly int _maxBytesPerRead;
+
+        public int ReadCallCount { get; private set; }
+
+        public ChunkedReadStream(Stream inner, int maxBytesPerRead)
+        {
+            _inner = inner;
+            _maxBytesPerRead = maxBytesPerRead;
+        }
+
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => _inner.CanSeek;
+        public override bool CanWrite => false;
+        public override long Length => _inner.Length;
+
+        public override long Position
+        {
+            get => _inner.Position;
+            set => _inner.Position = value;
+        }
+
+        public override void Flush()
+        {
+            _inner.Flush();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ReadCallCount++;
+            return _inner.Read(buffer, offset, Math.Min(count, _maxBytesPerRead));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            ReadCallCount++;
+            return _inner.Read(buffer[..Math.Min(buffer.Length, _maxBytesPerRead)]);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+            => _inner.Seek(offset, origin);
+
+        public override void SetLength(long value)
+            => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count)
+            => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
+
+public class NonSeekableStreamWrapper : Stream
     {
         private readonly Stream _innerStream;
 
