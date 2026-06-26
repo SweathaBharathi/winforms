@@ -6814,16 +6814,14 @@ public partial class Form : ContainerControl
                 {
                     for (int i = ownedForms.Count - 1; i >= 0; i--)
                     {
-                        Form ownedForm = ownedForms[i];
-
                         fc = new FormClosedEventArgs(CloseReason.FormOwnerClosing);
 
                         // Mark FormClosed as already handled by the owner close path.
                         // Later CheckCloseDialog should not raise FormClosed again for this modal form.
-                        if (ownedForm.Modal)
+                        if (ownedForms[i].Modal)
                         {
-                            ownedForm.IsClosing = true;
-                            ownedForm.CloseReason = CloseReason.FormOwnerClosing;
+                            ownedForms[i].IsClosing = true;
+                            ownedForms[i].CloseReason = CloseReason.FormOwnerClosing;
                         }
 
                         // Call OnClosed and OnFormClosed on the child forms.
