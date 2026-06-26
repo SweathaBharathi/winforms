@@ -3206,7 +3206,7 @@ public partial class Form : ContainerControl
                 }
             }
 
-            if (!closingOnly && _dialogResult != DialogResult.None)
+            if (!closingOnly && _dialogResult != DialogResult.None && !IsClosing)
             {
                 FormClosedEventArgs fc = new(_closeReason);
 #pragma warning disable WFDEV004 // Type or member is obsolete - compat
@@ -6737,17 +6737,6 @@ public partial class Form : ContainerControl
                 {
                     for (int i = ownedForms.Count - 1; i >= 0; i--)
                     {
-                        // Modal owned forms are running their own message loop via ShowDialog.
-                        // Their FormClosing/FormClosed events will be fired by CheckCloseDialog
-                        // in that loop once the owner's destruction triggers WmNCDestroy on the
-                        // modal form. Set the close reason now so that CheckCloseDialog uses the
-                        // correct reason; skipping the direct call here avoids the double-fire.
-                        if (ownedForms[i].Modal)
-                        {
-                            ownedForms[i].CloseReason = CloseReason.FormOwnerClosing;
-                            continue;
-                        }
-
                         FormClosingEventArgs cfe = new(CloseReason.FormOwnerClosing, e.Cancel);
 
                         // Call OnFormClosing on the child forms.
@@ -6757,6 +6746,14 @@ public partial class Form : ContainerControl
                             // Set the cancel flag for the Owner form
                             e.Cancel = true;
                             break;
+                        }
+
+                        // Modal owned forms are running their own message loop via ShowDialog.
+                        // Mark FormClosing as already called so CheckCloseDialog does not raise it again.
+                        if (ownedForms[i].Modal)
+                        {
+                            ownedForms[i].CalledClosing = true;
+                            ownedForms[i].CloseReason = CloseReason.FormOwnerClosing;
                         }
                     }
                 }
@@ -6817,14 +6814,18 @@ public partial class Form : ContainerControl
                 {
                     for (int i = ownedForms.Count - 1; i >= 0; i--)
                     {
-                        // Modal owned forms are handled by CheckCloseDialog in their own
-                        // message loop — skipping here prevents the double FormClosed firing.
-                        if (ownedForms[i].Modal)
-                        {
-                            continue;
-                        }
+                        Form ownedForm = ownedForms[i];
 
                         fc = new FormClosedEventArgs(CloseReason.FormOwnerClosing);
+
+                        // Mark FormClosed as already handled by the owner close path.
+                        // Later CheckCloseDialog should not raise FormClosed again for this modal form.
+                        if (ownedForm.Modal)
+                        {
+                            ownedForm.IsClosing = true;
+                            ownedForm.CloseReason = CloseReason.FormOwnerClosing;
+                        }
+
                         // Call OnClosed and OnFormClosed on the child forms.
 #pragma warning disable WFDEV004 // Type or member is obsolete - compat
                         ownedForms[i].OnClosed(fc);
