@@ -234,6 +234,38 @@ public partial class FormTests
         Assert.Equal(value, form.Active);
     }
 
+    [WinFormsFact]
+    public void Form_ShowDialogWithOwner_ClosingParentProgrammatically_ChildFormClosedRaisedOnce()
+    {
+        using Form parent = new()
+        {
+            Text = "Parent"
+        };
+
+        using Form child = new()
+        {
+            Text = "Child"
+        };
+
+        int childFormClosedCount = 0;
+
+        child.FormClosed += (sender, e) =>
+        {
+            childFormClosedCount++;
+        };
+
+        parent.Show();
+
+        child.Shown += (sender, e) =>
+        {
+            child.BeginInvoke(new Action(parent.Close));
+        };
+
+        child.ShowDialog(parent);
+
+        Assert.Equal(1, childFormClosedCount);
+    }
+
     // non deterministic, commenting out for now
     /*[Fact]
     public void Form_ActiveFormNotSetActive()
