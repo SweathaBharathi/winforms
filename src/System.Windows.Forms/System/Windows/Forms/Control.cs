@@ -1424,7 +1424,7 @@ public unsafe partial class Control :
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     [SRDescription(nameof(SR.ControlCheckForIllegalCrossThreadCalls))]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public static bool CheckForIllegalCrossThreadCalls { get; set; } = Debugger.IsAttached;
+    public static bool CheckForIllegalCrossThreadCalls { get; set; } = true;
 
     /// <summary>
     ///  The client rect of the control.
