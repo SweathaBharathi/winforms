@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable disable
@@ -944,6 +944,25 @@ public class DesignSurfaceTests
     {
         using DesignSurface surface = new();
         Assert.Throws<ArgumentNullException>("rootComponentType", () => surface.BeginLoad((Type)null));
+    }
+
+    [Fact]
+    public void DesignSurface_Add_Flushed_EventHandler()
+    {
+        using DesignSurface surface = new();
+        EventHandler handler = (sender, e) => { };
+
+        surface.Flushed += handler;
+    }
+
+    [Fact]
+    public void DesignSurface_Remove_Flushed_EventHandler()
+    {
+        using DesignSurface surface = new();
+        EventHandler handler = (sender, e) => { };
+
+        surface.Flushed += handler;
+        surface.Flushed -= handler;
     }
 
     [WinFormsFact]

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable disable
@@ -45,6 +45,59 @@ public class UndoUnitTests : UndoEngine
     public void UndoUnit_NullEngine_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>("engine", () => new UndoUnit(null, "name"));
+    }
+
+    [Fact]
+    public void UndoEngine_Ctor_IServiceProvider()
+    {
+        Assert.True(Enabled);
+        Assert.False(UndoInProgress);
+    }
+
+    [Fact]
+    public void UndoEngine_DiscardUndoUnit_UndoUnit()
+    {
+        SubUndoUnit unit = new(this, "name");
+
+        DiscardUndoUnit(unit);
+
+        Assert.True(unit.IsEmpty);
+    }
+
+    [Theory]
+    [BoolData]
+    public void UndoEngine_Dispose_Boolean(bool disposing)
+    {
+        Dispose(disposing);
+    }
+
+    [Fact]
+    public void UndoEngine_Get_Enabled()
+    {
+        Assert.True(Enabled);
+    }
+
+    [Fact]
+    public void UndoEngine_Get_UndoInProgress()
+    {
+        Assert.False(UndoInProgress);
+    }
+
+    [Fact]
+    public void UndoEngine_GetService_Type()
+    {
+        object? service = GetService(typeof(IDesignerHost));
+
+        Assert.NotNull(service);
+    }
+
+    [Theory]
+    [BoolData]
+    public void UndoEngine_Set_Enabled_Boolean(bool value)
+    {
+        Enabled = value;
+
+        Assert.Equal(value, Enabled);
     }
 
     protected override void AddUndoUnit(UndoUnit unit)
