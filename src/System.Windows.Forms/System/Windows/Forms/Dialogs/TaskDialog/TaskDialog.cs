@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Windows.Win32.Graphics.Dwm;
 using TASKDIALOGCONFIG_FooterIcon = Windows.Win32.UI.Controls.TASKDIALOGCONFIG._Anonymous2_e__Union;
 using TASKDIALOGCONFIG_MainIcon = Windows.Win32.UI.Controls.TASKDIALOGCONFIG._Anonymous1_e__Union;
 namespace System.Windows.Forms;
@@ -929,6 +930,10 @@ public partial class TaskDialog : IWin32Window
             switch (notification)
             {
                 case TASKDIALOG_NOTIFICATIONS.TDN_CREATED:
+                    // Apply dark mode as early as possible so the dialog and its
+                    // controls are themed before they become visible.
+                    ApplyDarkModeIfNeeded();
+
                     _boundPage.ApplyInitialization();
 
                     // Don't raise the Created event of the bound page if we are
@@ -946,6 +951,11 @@ public partial class TaskDialog : IWin32Window
                     break;
 
                 case TASKDIALOG_NOTIFICATIONS.TDN_NAVIGATED:
+                    // Navigating to a new page recreates the dialog's child controls
+                    // (buttons, checkboxes, etc.), so we need to re-apply dark mode
+                    // theming to them.
+                    ApplyDarkModeIfNeeded();
+
                     // Indicate to the ButtonClicked handlers currently on the stack
                     // that we received the TDN_NAVIGATED notification.
                     _buttonClickNavigationCounter.navigationIndex = _buttonClickNavigationCounter.stackCount;
@@ -1608,6 +1618,57 @@ public partial class TaskDialog : IWin32Window
                 // need to keep the delegate alive until that happens.
             }
         }
+    }
+
+    /// <summary>
+    ///  Applies dark mode theming to the native task dialog window and its child
+    ///  controls (buttons, checkboxes, links, etc.) if dark mode is currently
+    ///  enabled for the application.
+    /// </summary>
+    private unsafe void ApplyDarkModeIfNeeded()
+    {
+        if (!Application.IsDarkModeEnabled)
+        {
+            return;
+        }
+
+        // Enable the dark title bar/frame for the dialog window.
+        BOOL useDarkMode = true;
+        PInvoke.DwmSetWindowAttribute(
+            _handle,
+            DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE,
+            &useDarkMode,
+            (uint)sizeof(BOOL)).AssertSuccess();
+
+        // Theme the dialog itself as well as all of its child controls (buttons,
+        // checkboxes, links, etc.), since each of them is a separate child window
+        // that doesn't automatically inherit the parent's theme.
+        ThemeWindowForDarkMode(_handle);
+        PInvokeCore.EnumChildWindows(new HandleRef<HWND>(this, _handle), ThemeChildWindowForDarkMode);
+    }
+
+    private static BOOL ThemeChildWindowForDarkMode(HWND hWnd)
+    {
+        ThemeWindowForDarkMode(hWnd);
+        return true;
+    }
+
+    private static void ThemeWindowForDarkMode(HWND hWnd)
+    {
+        try
+        {
+            // Flag the window as allowed to use dark mode visuals. This is required
+            // (in addition to SetWindowTheme below) for standard controls such as
+            // push buttons to actually render with dark visuals. This API is only
+            // available on Windows 10 1809 (build 17763) and later, so tolerate it
+            // being missing on older Windows versions.
+            PInvoke.AllowDarkModeForWindow(hWnd, true);
+        }
+        catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException)
+        {
+        }
+
+        PInvoke.SetWindowTheme(hWnd, $"{Control.DarkModeIdentifier}_{Control.ExplorerThemeIdentifier}", null);
     }
 
     private void DenyIfBound()
