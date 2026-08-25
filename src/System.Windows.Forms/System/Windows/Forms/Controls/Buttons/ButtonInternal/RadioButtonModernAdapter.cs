@@ -61,6 +61,7 @@ internal sealed class RadioButtonModernAdapter : RadioButtonBaseAdapter
     protected override LayoutOptions Layout(PaintEventArgs e)
     {
         LayoutOptions layout = CommonLayout();
+        layout.CheckPaddingSize = Control.LogicalToDeviceUnits(2);
         layout.CheckSize = Math.Max(
             Control.LogicalToDeviceUnits(13),
             (int)(Control.Font.Height * 0.9f));
@@ -90,8 +91,9 @@ internal sealed class RadioButtonModernAdapter : RadioButtonBaseAdapter
         PaintBackgroundImage(e);
 
         Color? customOnColor = Control.ShouldSerializeBackColor()
-            ? Control.BackColor
-            : null;
+            && Control.BackColor.A == byte.MaxValue
+                ? Control.BackColor
+                : null;
 
         Color? customBorderColor = Control.FlatAppearance.BorderColor.IsEmpty
             ? null
