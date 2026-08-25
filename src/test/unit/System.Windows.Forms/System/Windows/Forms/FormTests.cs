@@ -2785,7 +2785,7 @@ public partial class FormTests
         Task closerTask = Task.Run(async () =>
         {
             await Task.Delay(100).ConfigureAwait(false);
-            mainForm.Close();
+            await mainForm.InvokeAsync(mainForm.Close).ConfigureAwait(false);
         });
 
         await Task.WhenAll(frmTask, closerTask)
