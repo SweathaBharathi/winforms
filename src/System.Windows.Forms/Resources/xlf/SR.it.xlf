@@ -3597,6 +3597,11 @@
         <target state="translated">Aspetto dello stile Flat delle celle della colonna.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataGridView_ComboBoxColumnIntegralHeightDescr">
+        <source>Indicates whether the drop-down list of the cells in the column resizes to avoid showing partial items.</source>
+        <target state="new">Indicates whether the drop-down list of the cells in the column resizes to avoid showing partial items.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DataGridView_ComboBoxColumnItemsDescr">
         <source>The collection of objects used as selections in the combo boxes.</source>
         <target state="translated">La raccolta di oggetti utilizzati come selezioni nelle caselle combinate.</target>

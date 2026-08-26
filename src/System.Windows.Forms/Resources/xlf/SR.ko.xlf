@@ -3597,6 +3597,11 @@
         <target state="translated">열에 있는 셀의 평면 스타일 모양입니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataGridView_ComboBoxColumnIntegralHeightDescr">
+        <source>Indicates whether the drop-down list of the cells in the column resizes to avoid showing partial items.</source>
+        <target state="new">Indicates whether the drop-down list of the cells in the column resizes to avoid showing partial items.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DataGridView_ComboBoxColumnItemsDescr">
         <source>The collection of objects used as selections in the combo boxes.</source>
         <target state="translated">콤보 상자의 선택 항목으로 사용되는 개체의 컬렉션입니다.</target>

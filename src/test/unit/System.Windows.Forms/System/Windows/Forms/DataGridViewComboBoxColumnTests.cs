@@ -23,6 +23,7 @@ public class DataGridViewComboBoxColumnTests : IDisposable
         _dataGridViewComboBoxColumn.DropDownWidth.Should().Be(1);
         _dataGridViewComboBoxColumn.FlatStyle.Should().Be(FlatStyle.Standard);
         _dataGridViewComboBoxColumn.MaxDropDownItems.Should().Be(DataGridViewComboBoxCell.DefaultMaxDropDownItems);
+        _dataGridViewComboBoxColumn.IntegralHeight.Should().Be(DataGridViewComboBoxCell.DefaultIntegralHeight);
         _dataGridViewComboBoxColumn.Sorted.Should().BeFalse();
     }
 
@@ -291,6 +292,34 @@ public class DataGridViewComboBoxColumnTests : IDisposable
     }
 
     [Fact]
+    public void IntegralHeight_SetValue_PropagatesToTemplate()
+    {
+        _dataGridViewComboBoxColumn.IntegralHeight = false;
+        _dataGridViewComboBoxColumn.IntegralHeight.Should().BeFalse();
+        ((DataGridViewComboBoxCell)_dataGridViewComboBoxColumn.CellTemplate!).IntegralHeight.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IntegralHeight_SetValue_PropagatesToCellsInGrid()
+    {
+        using DataGridView dataGridView = new();
+        dataGridView.Columns.Add(_dataGridViewComboBoxColumn);
+        dataGridView.Rows.Add(2);
+
+        _dataGridViewComboBoxColumn.IntegralHeight = false;
+
+        foreach (DataGridViewRow row in dataGridView.Rows)
+        {
+            if (row.IsNewRow)
+                continue;
+            using DataGridViewComboBoxCell? cell = row.Cells[0] as DataGridViewComboBoxCell;
+
+            cell.Should().NotBeNull();
+            cell.IntegralHeight.Should().BeFalse();
+        }
+    }
+
+    [Fact]
     public void Sorted_SetValue_PropagatesToTemplate()
     {
         _dataGridViewComboBoxColumn.Sorted = true;
@@ -343,6 +372,8 @@ public class DataGridViewComboBoxColumnTests : IDisposable
             () => _dataGridViewComboBoxColumn.DropDownWidth = 5,
             () => { var _ = _dataGridViewComboBoxColumn.MaxDropDownItems; },
             () => _dataGridViewComboBoxColumn.MaxDropDownItems = 5,
+            () => { var _ = _dataGridViewComboBoxColumn.IntegralHeight; },
+            () => _dataGridViewComboBoxColumn.IntegralHeight = false,
             () => { var _ = _dataGridViewComboBoxColumn.Sorted; },
             () => _dataGridViewComboBoxColumn.Sorted = true,
             () => { var _ = _dataGridViewComboBoxColumn.FlatStyle; },
@@ -367,6 +398,7 @@ public class DataGridViewComboBoxColumnTests : IDisposable
         _dataGridViewComboBoxColumn.Items.Add("X");
         _dataGridViewComboBoxColumn.ValueMember = "Id";
         _dataGridViewComboBoxColumn.MaxDropDownItems = 5;
+        _dataGridViewComboBoxColumn.IntegralHeight = false;
         _dataGridViewComboBoxColumn.Sorted = true;
 
         using DataGridViewComboBoxColumn dataGridViewComboBoxColumn = (DataGridViewComboBoxColumn)_dataGridViewComboBoxColumn.Clone();
@@ -383,6 +415,7 @@ public class DataGridViewComboBoxColumnTests : IDisposable
         dataGridViewComboBoxColumn.Items[0].Should().Be("X");
         dataGridViewComboBoxColumn.ValueMember.Should().Be("Id");
         dataGridViewComboBoxColumn.MaxDropDownItems.Should().Be(5);
+        dataGridViewComboBoxColumn.IntegralHeight.Should().BeFalse();
         dataGridViewComboBoxColumn.Sorted.Should().BeTrue();
         dataGridViewComboBoxColumn.CellTemplate.Should().NotBeNull();
         dataGridViewComboBoxColumn.CellTemplate.Should().NotBeSameAs(_dataGridViewComboBoxColumn.CellTemplate);

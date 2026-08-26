@@ -26,6 +26,7 @@ public partial class DataGridViewComboBoxCell : DataGridViewCell
     private static readonly int s_propComboBoxCellFlatStyle = PropertyStore.CreateKey();
     private static readonly int s_propComboBoxCellDisplayStyle = PropertyStore.CreateKey();
     private static readonly int s_propComboBoxCellDisplayStyleForCurrentCellOnly = PropertyStore.CreateKey();
+    private static readonly int s_propComboBoxCellIntegralHeight = PropertyStore.CreateKey();
 
     private const byte Margin = 3;
     private const byte NonXPTriangleHeight = 4;
@@ -35,6 +36,7 @@ public partial class DataGridViewComboBoxCell : DataGridViewCell
     private const byte VerticalTextMarginTopWithoutWrapping = 1;
 
     internal const int DefaultMaxDropDownItems = 8;
+    internal const bool DefaultIntegralHeight = true;
 
     private static readonly Type s_defaultFormattedValueType = typeof(string);
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.Interfaces)]
@@ -369,6 +371,24 @@ public partial class DataGridViewComboBoxCell : DataGridViewCell
 
     internal bool HasItems => Properties.ContainsKey(s_propComboBoxCellItems);
 
+    /// <summary>
+    ///  Gets or sets a value indicating whether the drop-down list of the cell resizes so that it does not
+    ///  show partial items.
+    /// </summary>
+    [DefaultValue(DefaultIntegralHeight)]
+    public virtual bool IntegralHeight
+    {
+        get => Properties.GetValueOrDefault(s_propComboBoxCellIntegralHeight, DefaultIntegralHeight);
+        set
+        {
+            Properties.AddOrRemoveValue(s_propComboBoxCellIntegralHeight, value, defaultValue: DefaultIntegralHeight);
+            if (OwnsEditingComboBox(RowIndex))
+            {
+                EditingComboBox.IntegralHeight = value;
+            }
+        }
+    }
+
     [Browsable(false)]
     public virtual ObjectCollection Items => GetItems(DataGridView);
 
@@ -647,6 +667,7 @@ public partial class DataGridViewComboBoxCell : DataGridViewCell
         CloneInternal(dataGridViewCell);
         dataGridViewCell.DropDownWidth = DropDownWidth;
         dataGridViewCell.MaxDropDownItems = MaxDropDownItems;
+        dataGridViewCell.IntegralHeight = IntegralHeight;
         dataGridViewCell.CreateItemsFromDataSource = false;
         dataGridViewCell.DataSource = DataSource;
         dataGridViewCell.DisplayMember = DisplayMember;
@@ -1271,6 +1292,7 @@ public partial class DataGridViewComboBoxCell : DataGridViewCell
             comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBox.FormattingEnabled = true;
             comboBox.MaxDropDownItems = MaxDropDownItems;
+            comboBox.IntegralHeight = IntegralHeight;
             comboBox.DropDownWidth = DropDownWidth;
             comboBox.DataSource = null;
             comboBox.ValueMember = null;

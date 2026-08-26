@@ -111,6 +111,19 @@ public class DataGridViewComboBoxCellTests : IDisposable
     }
 
     [Fact]
+    public void IntegralHeight_DefaultValue_IsTrue() =>
+        _dataGridViewComboBoxCell.IntegralHeight.Should().Be(DataGridViewComboBoxCell.DefaultIntegralHeight);
+
+    [WinFormsTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void IntegralHeight_SetValue_ChangesValue(bool value)
+    {
+        _dataGridViewComboBoxCell.IntegralHeight = value;
+        _dataGridViewComboBoxCell.IntegralHeight.Should().Be(value);
+    }
+
+    [Fact]
     public void MaxDropDownItems_DefaultValue_IsEight() =>
         _dataGridViewComboBoxCell.MaxDropDownItems.Should().Be(DataGridViewComboBoxCell.DefaultMaxDropDownItems);
 

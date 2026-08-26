@@ -1833,6 +1833,9 @@
   <data name="DataGridView_ComboBoxColumnMaxDropDownItemsDescr" xml:space="preserve">
     <value>The maximum number of items in the drop-down list of the cells in the column.</value>
   </data>
+  <data name="DataGridView_ComboBoxColumnIntegralHeightDescr" xml:space="preserve">
+    <value>Indicates whether the drop-down list of the cells in the column resizes to avoid showing partial items.</value>
+  </data>
   <data name="DataGridView_ComboBoxColumnSortedDescr" xml:space="preserve">
     <value>Indicates whether the items in the combo box are sorted.</value>
   </data>

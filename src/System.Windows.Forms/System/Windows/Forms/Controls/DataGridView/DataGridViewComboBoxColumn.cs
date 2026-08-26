@@ -345,6 +345,51 @@ public class DataGridViewComboBoxColumn : DataGridViewColumn
         }
     }
 
+    /// <summary>
+    ///  Gets or sets a value indicating whether the drop-down list of the cells in the column resizes so that
+    ///  it does not show partial items.
+    /// </summary>
+    [DefaultValue(DataGridViewComboBoxCell.DefaultIntegralHeight)]
+    [SRCategory(nameof(SR.CatBehavior))]
+    [SRDescription(nameof(SR.DataGridView_ComboBoxColumnIntegralHeightDescr))]
+    [MemberNotNull(nameof(ComboBoxCellTemplate))]
+    public bool IntegralHeight
+    {
+        get
+        {
+            if (ComboBoxCellTemplate is null)
+            {
+                throw new InvalidOperationException(SR.DataGridViewColumn_CellTemplateRequired);
+            }
+
+            return ComboBoxCellTemplate.IntegralHeight;
+        }
+        set
+        {
+            if (IntegralHeight == value)
+            {
+                return;
+            }
+
+            ComboBoxCellTemplate.IntegralHeight = value;
+            if (DataGridView is null)
+            {
+                return;
+            }
+
+            DataGridViewRowCollection dataGridViewRows = DataGridView.Rows;
+            int rowCount = dataGridViewRows.Count;
+            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+            {
+                DataGridViewRow dataGridViewRow = dataGridViewRows.SharedRow(rowIndex);
+                if (dataGridViewRow.Cells[Index] is DataGridViewComboBoxCell dataGridViewCell)
+                {
+                    dataGridViewCell.IntegralHeight = value;
+                }
+            }
+        }
+    }
+
     [Editor($"System.Windows.Forms.Design.StringCollectionEditor, {Assemblies.SystemDesign}", typeof(UITypeEditor))]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
     [SRCategory(nameof(SR.CatData))]
