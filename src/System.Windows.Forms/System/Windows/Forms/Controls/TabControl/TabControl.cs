@@ -74,6 +74,12 @@ public partial class TabControl : Control
     private ToolTipBuffer _toolTipBuffer;
     private bool _suspendDarkModeChange;
 
+    // The native tab control does not render a hot-track (mouse-hover) highlight for tab items
+    // when the "FileExplorerBannerContainer" Dark Mode theme is applied (see ApplyDarkModeOnDemand).
+    // We restore that visual feedback ourselves by tracking the hovered tab and drawing a subtle
+    // overlay on top of the native paint while running in Dark Mode.
+    private int _hoveredTabIndex = -1;
+
     /// <summary>
     ///  Constructs a TabBase object, usually as the base class for a TabStrip or TabControl.
     /// </summary>
@@ -1123,6 +1129,21 @@ public partial class TabControl : Control
         return rect;
     }
 
+    // Same as GetTabRect, but does not touch the State.GetTabRectfromItemSize one-shot flag that
+    // ItemSize relies on. Used by the Dark Mode hover-highlight tracking so that frequent
+    // WM_MOUSEMOVE-driven lookups cannot interfere with that layout state.
+    private Rectangle GetTabRectForHoverTracking(int index)
+    {
+        if (index < 0 || index >= TabCount || !IsHandleCreated)
+        {
+            return Rectangle.Empty;
+        }
+
+        RECT rect = default;
+        PInvokeCore.SendMessage(this, PInvoke.TCM_GETITEMRECT, (WPARAM)index, ref rect);
+        return rect;
+    }
+
     protected string GetToolTipText(object item)
     {
         ArgumentNullException.ThrowIfNull(item);
@@ -1319,6 +1340,8 @@ public partial class TabControl : Control
             NativeWindow.RemoveWindowFromIDTable(_windowId);
         }
 
+        _hoveredTabIndex = -1;
+
         base.OnHandleDestroyed(e);
     }
 
@@ -1379,6 +1402,81 @@ public partial class TabControl : Control
     {
         NotifyAboutFocusState(SelectedTab, focused: false);
         base.OnLostFocus(e);
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+
+        if (Application.IsDarkModeEnabled)
+        {
+            UpdateHoveredTab(HitTestTab(e.Location));
+        }
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+
+        if (Application.IsDarkModeEnabled)
+        {
+            UpdateHoveredTab(-1);
+        }
+    }
+
+    // Determines which tab (if any) contains the given client-coordinate point.
+    private int HitTestTab(Point location)
+    {
+        for (int i = 0; i < TabCount; i++)
+        {
+            if (GetTabRectForHoverTracking(i).Contains(location))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    // Updates the currently hovered tab index and invalidates the affected tab rectangles so that
+    // WmPaintHoverHighlight redraws the hover overlay on the next paint.
+    private void UpdateHoveredTab(int newIndex)
+    {
+        if (newIndex == _hoveredTabIndex)
+        {
+            return;
+        }
+
+        int previousIndex = _hoveredTabIndex;
+        _hoveredTabIndex = newIndex;
+
+        if (previousIndex >= 0 && previousIndex < TabCount)
+        {
+            Invalidate(GetTabRectForHoverTracking(previousIndex));
+        }
+
+        if (_hoveredTabIndex >= 0 && _hoveredTabIndex < TabCount)
+        {
+            Invalidate(GetTabRectForHoverTracking(_hoveredTabIndex));
+        }
+    }
+
+    // Draws a subtle hover overlay on top of the natively painted tab strip. This is necessary
+    // because the Dark Mode "FileExplorerBannerContainer" theme used in ApplyDarkModeOnDemand
+    // does not render a hot-track highlight for the hovered tab item.
+    private void PaintHoverHighlight()
+    {
+        if (_hoveredTabIndex < 0
+            || _hoveredTabIndex >= TabCount
+            || _hoveredTabIndex == SelectedIndex)
+        {
+            return;
+        }
+
+        Rectangle tabRect = GetTabRectForHoverTracking(_hoveredTabIndex);
+        using Graphics graphics = CreateGraphics();
+        using SolidBrush brush = new(Color.FromArgb(40, Color.White));
+        graphics.FillRectangle(brush, tabRect);
     }
 
     /// <summary>
@@ -2075,6 +2173,16 @@ public partial class TabControl : Control
             case MessageId.WM_REFLECT_MEASUREITEM:
                 // We use TCM_SETITEMSIZE instead
                 break;
+
+            case PInvokeCore.WM_PAINT:
+                base.WndProc(ref m);
+
+                if (Application.IsDarkModeEnabled)
+                {
+                    PaintHoverHighlight();
+                }
+
+                return;
 
             case PInvokeCore.WM_NOTIFY:
             case MessageId.WM_REFLECT_NOTIFY:
