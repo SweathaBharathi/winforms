@@ -4492,6 +4492,79 @@ public class TabControlTests
         Assert.Equal(2, childCallCount2);
     }
 
+    [WinFormsFact]
+    public void TabControl_OnMouseMove_DarkModeEnabled_TracksHoveredTabAndInvalidates()
+    {
+        // Regression for https://github.com/dotnet/winforms/issues/14056
+        // Simulate Dark Mode without calling Application.SetColorMode, which can only be set
+        // once per process and can hang test infrastructure. See Form_RecreateHandle_ReappliesImmersiveDarkModeTitleBar
+        // in FormTests.cs for the same pattern.
+        var applicationAccessor = typeof(Application).TestAccessor.Dynamic;
+        SystemColorMode? previousColorMode = applicationAccessor.s_colorMode;
+
+        try
+        {
+            applicationAccessor.s_colorMode = SystemColorMode.Dark;
+            Assert.True(Application.IsDarkModeEnabled);
+
+            using SubTabControl control = new();
+            using TabPage page1 = new();
+            using TabPage page2 = new();
+            control.TabPages.Add(page1);
+            control.TabPages.Add(page2);
+            control.CreateControl();
+
+            Rectangle firstTabRect = control.GetTabRect(0);
+            Point pointInFirstTab = new(firstTabRect.X + 1, firstTabRect.Y + 1);
+
+            control.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, pointInFirstTab.X, pointInFirstTab.Y, 0));
+
+            Assert.Equal(0, control.TestAccessor.Dynamic._hoveredTabIndex);
+
+            Rectangle secondTabRect = control.GetTabRect(1);
+            Point pointInSecondTab = new(secondTabRect.X + 1, secondTabRect.Y + 1);
+
+            control.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, pointInSecondTab.X, pointInSecondTab.Y, 0));
+
+            Assert.Equal(1, control.TestAccessor.Dynamic._hoveredTabIndex);
+        }
+        finally
+        {
+            applicationAccessor.s_colorMode = previousColorMode;
+        }
+    }
+
+    [WinFormsFact]
+    public void TabControl_OnMouseLeave_DarkModeEnabled_ClearsHoveredTab()
+    {
+        var applicationAccessor = typeof(Application).TestAccessor.Dynamic;
+        SystemColorMode? previousColorMode = applicationAccessor.s_colorMode;
+
+        try
+        {
+            applicationAccessor.s_colorMode = SystemColorMode.Dark;
+            Assert.True(Application.IsDarkModeEnabled);
+
+            using SubTabControl control = new();
+            using TabPage page1 = new();
+            control.TabPages.Add(page1);
+            control.CreateControl();
+
+            Rectangle firstTabRect = control.GetTabRect(0);
+            Point pointInFirstTab = new(firstTabRect.X + 1, firstTabRect.Y + 1);
+            control.OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, pointInFirstTab.X, pointInFirstTab.Y, 0));
+            Assert.Equal(0, control.TestAccessor.Dynamic._hoveredTabIndex);
+
+            control.OnMouseLeave(EventArgs.Empty);
+
+            Assert.Equal(-1, control.TestAccessor.Dynamic._hoveredTabIndex);
+        }
+        finally
+        {
+            applicationAccessor.s_colorMode = previousColorMode;
+        }
+    }
+
     public static IEnumerable<object[]> OnRightToLeftLayoutChanged_TestData()
     {
         yield return new object[] { RightToLeft.Yes, null };
@@ -5832,6 +5905,10 @@ public class TabControlTests
         public new void OnHandleDestroyed(EventArgs e) => base.OnHandleDestroyed(e);
 
         public new void OnLeave(EventArgs e) => base.OnLeave(e);
+
+        public new void OnMouseMove(MouseEventArgs e) => base.OnMouseMove(e);
+
+        public new void OnMouseLeave(EventArgs e) => base.OnMouseLeave(e);
 
         public new void OnRightToLeftLayoutChanged(EventArgs e) => base.OnRightToLeftLayoutChanged(e);
 
