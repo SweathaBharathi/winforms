@@ -987,13 +987,32 @@ public partial class ToolStripMenuItem : ToolStripDropDownItem
 
             if ((DisplayStyle & ToolStripItemDisplayStyle.Text) == ToolStripItemDisplayStyle.Text)
             {
-                // render text AND shortcut
-                renderer.DrawItemText(new ToolStripItemTextRenderEventArgs(g, this, Text, InternalLayout.TextRectangle, textColor, Font, (rightToLeft) ? ContentAlignment.MiddleRight : ContentAlignment.MiddleLeft));
                 bool showShortCut = ShowShortcutKeys;
                 if (!DesignMode)
                 {
                     showShortCut = showShortCut && !HasDropDownItems;
                 }
+
+                // ShowShortcutKeys can be true even when there is no actual shortcut assigned, in which case
+                // GetShortcutText() returns an empty string and nothing is drawn for it.
+                bool hasVisibleShortcut = showShortCut && !string.IsNullOrEmpty(GetShortcutText());
+
+                Rectangle textRectangle = InternalLayout.TextRectangle;
+                if (!HasDropDownItems && !hasVisibleShortcut)
+                {
+                    // The layout always reserves room for a submenu arrow so that check/image/arrow columns line
+                    // up across all items in the menu. When this item has neither a submenu arrow nor a shortcut
+                    // to draw, reclaim that reserved space so every TextAlign value (including Center/Right and
+                    // Top/Bottom) can use the item's full available width/height instead of stopping short of the
+                    // item's right edge. This is a no-op for the default MiddleLeft alignment.
+                    textRectangle = Rectangle.Union(textRectangle, menuItemInternalLayout.ArrowRectangle);
+                }
+
+                // Honor TextAlign for the main label text. Previously this was hardcoded to MiddleLeft/MiddleRight
+                // based only on RightToLeft, so TextAlign had no effect at all for dropdown-hosted menu items.
+                // TextAlign is treated as absolute (not mirrored for RightToLeft), matching the behavior of every
+                // other ToolStripItem (e.g. ToolStripButton, ToolStripLabel).
+                renderer.DrawItemText(new ToolStripItemTextRenderEventArgs(g, this, Text, textRectangle, textColor, Font, TextAlign));
 
                 if (showShortCut)
                 {
