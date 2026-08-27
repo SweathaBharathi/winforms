@@ -4084,4 +4084,79 @@ public partial class DataGridViewTests : IDisposable
         dataGridView.Dispose();
         toolTipDisposeCount.Should().Be(1);
     }
+
+    [WinFormsFact]
+    public void DataGridView_GetClipboardContent_RowHeaderSelect_NonContiguousRows_SkipsUnselectedRows()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/3021:
+        // selecting non-adjacent rows (via their row headers) should not copy the
+        // unselected rows in between as blank lines to the Clipboard.
+        using DataGridView dataGridView = new()
+        {
+            SelectionMode = DataGridViewSelectionMode.RowHeaderSelect,
+            ColumnHeadersVisible = false,
+            RowHeadersVisible = false
+        };
+        dataGridView.Columns.Add(new DataGridViewTextBoxColumn());
+        dataGridView.Rows.Add("Row0");
+        dataGridView.Rows.Add("Row1");
+        dataGridView.Rows.Add("Row2");
+
+        dataGridView.Rows[0].Selected = true;
+        dataGridView.Rows[2].Selected = true;
+
+        DataObject dataObject = GetClipboardContentWithoutHtmlAssert(dataGridView);
+
+        dataObject.TryGetData(out string text).Should().BeTrue();
+        text.Should().Be($"Row0{(char)Keys.Return}{(char)Keys.LineFeed}Row2");
+    }
+
+    [WinFormsFact]
+    public void DataGridView_GetClipboardContent_RowHeaderSelect_ContiguousRows_ReturnsExpected()
+    {
+        // Ensures the fix for non-contiguous row selections does not affect the existing
+        // behavior for contiguous row selections.
+        using DataGridView dataGridView = new()
+        {
+            SelectionMode = DataGridViewSelectionMode.RowHeaderSelect,
+            ColumnHeadersVisible = false,
+            RowHeadersVisible = false
+        };
+        dataGridView.Columns.Add(new DataGridViewTextBoxColumn());
+        dataGridView.Rows.Add("Row0");
+        dataGridView.Rows.Add("Row1");
+        dataGridView.Rows.Add("Row2");
+
+        dataGridView.Rows[0].Selected = true;
+        dataGridView.Rows[1].Selected = true;
+        dataGridView.Rows[2].Selected = true;
+
+        DataObject dataObject = GetClipboardContentWithoutHtmlAssert(dataGridView);
+
+        dataObject.TryGetData(out string text).Should().BeTrue();
+        text.Should().Be(
+            $"Row0{(char)Keys.Return}{(char)Keys.LineFeed}" +
+            $"Row1{(char)Keys.Return}{(char)Keys.LineFeed}" +
+            "Row2");
+    }
+
+    // DataGridView.GetClipboardContent() always builds an HTML clipboard format in addition to
+    // plain text, and that unrelated pre-existing code path currently trips a Debug.Assert in test
+    // builds (independent of selection mode or of the fix under test here). Temporarily suppress
+    // trace listeners so these tests can validate the plain-text clipboard content produced by the
+    // row-selection fix without being blocked by that unrelated issue.
+    private static DataObject GetClipboardContentWithoutHtmlAssert(DataGridView dataGridView)
+    {
+        TraceListener[] listeners = new TraceListener[Trace.Listeners.Count];
+        Trace.Listeners.CopyTo(listeners, 0);
+        Trace.Listeners.Clear();
+        try
+        {
+            return dataGridView.GetClipboardContent();
+        }
+        finally
+        {
+            Trace.Listeners.AddRange(listeners);
+        }
+    }
 }

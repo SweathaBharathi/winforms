@@ -7113,6 +7113,27 @@ public partial class DataGridView
         }
     }
 
+    // Determines whether a row that falls within the bounding box of the current RowHeaderSelect
+    // selection is actually selected (either via its row header, or through an individually selected cell),
+    // and therefore should contribute content to the Clipboard. See https://github.com/dotnet/winforms/issues/3021.
+    private bool IsRowIncludedInClipboardContent(int rowIndex)
+    {
+        if ((Rows.GetRowState(rowIndex) & DataGridViewElementStates.Selected) != 0)
+        {
+            return true;
+        }
+
+        foreach (DataGridViewCell dataGridViewCell in _individualSelectedCells)
+        {
+            if (dataGridViewCell.RowIndex == rowIndex)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public virtual DataObject? GetClipboardContent()
     {
         if (ClipboardCopyMode == DataGridViewClipboardCopyMode.Disable)
@@ -8015,6 +8036,18 @@ public partial class DataGridView
                         {
                             nextRowIndex = Rows.GetNextRow(rowIndex, DataGridViewElementStates.Visible);
                             Debug.Assert(nextRowIndex != -1);
+
+                            if (SelectionMode == DataGridViewSelectionMode.RowHeaderSelect)
+                            {
+                                // The range [lRowIndex, uRowIndex] is the bounding box of the selected rows and may
+                                // contain unselected rows in between (e.g. rows 0 and 2 are selected, but not row 1).
+                                // Skip those unselected rows so they aren't copied to the Clipboard as blank lines.
+                                while (nextRowIndex != uRowIndex && !IsRowIncludedInClipboardContent(nextRowIndex))
+                                {
+                                    nextRowIndex = Rows.GetNextRow(nextRowIndex, DataGridViewElementStates.Visible);
+                                    Debug.Assert(nextRowIndex != -1);
+                                }
+                            }
                         }
                         else
                         {
