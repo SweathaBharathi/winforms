@@ -463,6 +463,112 @@ public class ButtonBaseTests : AbstractButtonBaseTests
     }
 
     [WinFormsFact]
+    public void ButtonBase_OnPaint_AutoEllipsis_TextFitsWithinBounds_DoesNotShowToolTip()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/5527:
+        // ShowToolTip must reflect whether Text is actually truncated when rendered, not just whether
+        // ClientSize is smaller than the unwrapped single-line PreferredSize.
+        using SubButton control = new()
+        {
+            AutoEllipsis = true,
+            Text = "OK",
+            Size = new Size(200, 100)
+        };
+        using Bitmap bitmap = new(control.Width, control.Height);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        using PaintEventArgs e = new(graphics, control.ClientRectangle);
+
+        control.OnPaint(e);
+
+        Assert.False(control.ShowToolTip);
+    }
+
+    [WinFormsFact]
+    public void ButtonBase_OnPaint_AutoEllipsis_TextDoesNotFitWithinBounds_ShowsToolTip()
+    {
+        using SubButton control = new()
+        {
+            AutoEllipsis = true,
+            Text = "This is a very long piece of text that cannot possibly fit",
+            Size = new Size(20, 20)
+        };
+        using Bitmap bitmap = new(control.Width, control.Height);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        using PaintEventArgs e = new(graphics, control.ClientRectangle);
+
+        control.OnPaint(e);
+
+        Assert.True(control.ShowToolTip);
+    }
+
+    [WinFormsFact]
+    public void ButtonBase_OnPaint_AutoEllipsisFalse_DoesNotShowToolTip()
+    {
+        using SubButton control = new()
+        {
+            AutoEllipsis = false,
+            Text = "This is a very long piece of text that cannot possibly fit",
+            Size = new Size(20, 20)
+        };
+        using Bitmap bitmap = new(control.Width, control.Height);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        using PaintEventArgs e = new(graphics, control.ClientRectangle);
+
+        control.OnPaint(e);
+
+        Assert.False(control.ShowToolTip);
+    }
+
+    [WinFormsFact]
+    public void ButtonBase_OnPaint_AutoEllipsis_ExplicitLinesFitVertically_ShowsAllLinesAndNoToolTip()
+    {
+        // All three explicit lines fit, so nothing should be truncated or merged.
+        using SubButton control = new()
+        {
+            AutoEllipsis = true,
+            Text = "button1\r\nbtn\r\nbtn",
+            Size = new Size(120, 120)
+        };
+        using Bitmap bitmap = new(control.Width, control.Height);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        using PaintEventArgs e = new(graphics, control.ClientRectangle);
+
+        control.OnPaint(e);
+
+        Rectangle field = control.Adapter!.GetLayoutData(control.ClientRectangle).Field;
+        string displayText = control.GetTextForDisplay(field);
+
+        Assert.Same(control.Text, displayText);
+        Assert.False(control.ShowToolTip);
+    }
+
+    [WinFormsFact]
+    public void ButtonBase_OnPaint_AutoEllipsis_ExplicitLinesDoNotFitVertically_ReplacesHiddenLinesWithEllipsisAndShowsToolTip()
+    {
+        // Only enough vertical room for one line: the explicit lines must not be silently merged onto the
+        // same visual row ("btn" + "btn" => "btnbtn"); instead the extra lines should be replaced with "…".
+        using SubButton control = new()
+        {
+            AutoEllipsis = true,
+            Text = "button1\r\nbtn\r\nbtn",
+            Size = new Size(75, 21)
+        };
+        using Bitmap bitmap = new(control.Width, control.Height);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        using PaintEventArgs e = new(graphics, control.ClientRectangle);
+
+        control.OnPaint(e);
+
+        Rectangle field = control.Adapter!.GetLayoutData(control.ClientRectangle).Field;
+        string displayText = control.GetTextForDisplay(field);
+
+        Assert.NotSame(control.Text, displayText);
+        Assert.DoesNotContain("btnbtn", displayText);
+        Assert.EndsWith("…", displayText);
+        Assert.True(control.ShowToolTip);
+    }
+
+    [WinFormsFact]
     public void ButtonBase_AutoSize_SetWithHandler_CallsAutoSizeChanged()
     {
         using SubButtonBase control = new()
@@ -9251,6 +9357,8 @@ public class ButtonBaseTests : AbstractButtonBaseTests
         public new bool GetStyle(ControlStyles flag) => base.GetStyle(flag);
 
         public new void OnTextChanged(EventArgs e) => base.OnTextChanged(e);
+
+        public new void OnPaint(PaintEventArgs pevent) => base.OnPaint(pevent);
     }
 
     private class ButtonControl : ButtonBase, IButtonControl

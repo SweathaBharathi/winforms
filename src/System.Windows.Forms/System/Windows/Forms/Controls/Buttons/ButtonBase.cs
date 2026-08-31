@@ -1075,6 +1075,87 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     }
 
     /// <summary>
+    ///  Returns <see langword="true"/> when <see cref="Text"/> does not fully fit within the space available for
+    ///  it (i.e. what is actually painted differs from <see cref="Text"/>), either because it is too wide/tall to
+    ///  fit, or because it contains more explicit lines (separated by "\r\n", "\r", or "\n") than can be displayed
+    ///  vertically.
+    /// </summary>
+    private bool IsTextTruncated()
+    {
+        if (string.IsNullOrEmpty(Text) || Adapter is null)
+        {
+            return false;
+        }
+
+        // Get the actual rectangle available for the text, taking into account image, borders, and padding.
+        Rectangle textBounds = Adapter.GetLayoutData(ClientRectangle).Field;
+        if (textBounds.Width <= 0 || textBounds.Height <= 0)
+        {
+            return false;
+        }
+
+        if (!ReferenceEquals(GetTextForDisplay(textBounds), Text))
+        {
+            // The explicit lines in Text don't all fit vertically; some were replaced with an ellipsis.
+            return true;
+        }
+
+        // Measure the space the text actually needs to render fully (without truncation) within the available
+        // width, then compare against the space actually available.
+        TextFormatFlags flags = CreateTextFormatFlags() & ~TextFormatFlags.EndEllipsis;
+        Size requiredSize = TextRenderer.MeasureText(Text, Font, textBounds.Size, flags);
+
+        return requiredSize.Width > textBounds.Width || requiredSize.Height > textBounds.Height;
+    }
+
+    /// <summary>
+    ///  Computes the text that should actually be painted for the button, given the space available for it.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Native GDI text rendering only honors <see cref="TextFormatFlags.EndEllipsis"/> for single-line text; when
+    ///   text wraps or contains multiple explicit lines, an explicit line that doesn't fit vertically is otherwise
+    ///   silently combined with, or squeezed alongside, adjacent visible lines instead of being shown with an
+    ///   ellipsis or dropped cleanly. To avoid this, when <see cref="AutoEllipsis"/> is set and <see cref="Text"/>
+    ///   contains more explicit lines than can fit in <paramref name="textBounds"/>, the extra lines are replaced
+    ///   with a single "…" line so the truncation is visible and each remaining explicit line keeps its own row.
+    ///  </para>
+    ///  <para>
+    ///   Returns the original <see cref="Text"/> instance (not a copy) when no adjustment is necessary, so callers
+    ///   can cheaply detect whether truncation occurred by reference comparison.
+    ///  </para>
+    /// </remarks>
+    internal string GetTextForDisplay(Rectangle textBounds)
+    {
+        string text = Text;
+        if (!AutoEllipsis || string.IsNullOrEmpty(text) || textBounds.Height <= 0)
+        {
+            return text;
+        }
+
+        string[] lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+        if (lines.Length <= 1)
+        {
+            // No explicit multi-line content; horizontal wrapping/ellipsis is handled natively.
+            return text;
+        }
+
+        int lineHeight = Math.Max(1, Font.Height);
+        int maxLines = Math.Max(1, textBounds.Height / lineHeight);
+        if (lines.Length <= maxLines)
+        {
+            return text;
+        }
+
+        if (maxLines == 1)
+        {
+            return "…";
+        }
+
+        return string.Join('\n', lines, 0, maxLines - 1) + "\n…";
+    }
+
+    /// <summary>
     ///  Raises the <see cref="CommandChanged"/> event.
     /// </summary>
     /// <param name="e">An empty <see cref="EventArgs"/> instance.</param>
@@ -1220,15 +1301,7 @@ public abstract partial class ButtonBase : Control, ICommandBindingTargetProvide
     /// </summary>
     protected override void OnPaint(PaintEventArgs pevent)
     {
-        if (AutoEllipsis)
-        {
-            Size preferredSize = PreferredSize;
-            ShowToolTip = (ClientRectangle.Width < preferredSize.Width || ClientRectangle.Height < preferredSize.Height);
-        }
-        else
-        {
-            ShowToolTip = false;
-        }
+        ShowToolTip = AutoEllipsis && IsTextTruncated();
 
         if (GetStyle(ControlStyles.UserPaint))
         {
