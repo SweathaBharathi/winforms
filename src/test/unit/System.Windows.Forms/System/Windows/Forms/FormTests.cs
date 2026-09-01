@@ -2500,6 +2500,55 @@ public partial class FormTests
         Assert.Equal(1, loadCallCount);
     }
 
+    [WinFormsFact]
+    public void Form_Text_SetForFirstTimeInLoad_IsAppliedBeforeWindowIsShown()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/9770: setting Form.Text for the
+        // first time inside the Load event must be applied to the native window BEFORE the window is
+        // actually shown to the OS (i.e. before WM_SHOWWINDOW is processed with wParam != 0). Otherwise,
+        // the shell (taskbar) can register the window using stale (e.g. empty) attributes and never
+        // revisit them if the window doesn't become the foreground window (see the linked issue).
+        using ShowWindowTrackingForm control = new();
+
+        control.Visible = true;
+
+        Assert.True(control.LoadRaised);
+        Assert.True(control.SawShowWindowMessage);
+        Assert.Equal("Set during Load", control.WindowTextAtFirstShowWindowMessage);
+    }
+
+    private class ShowWindowTrackingForm : Form
+    {
+        public bool LoadRaised { get; private set; }
+
+        public bool SawShowWindowMessage { get; private set; }
+
+        public bool WasWindowVisibleAtFirstShowWindowMessage { get; private set; }
+
+        public string WindowTextAtFirstShowWindowMessage { get; private set; }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            LoadRaised = true;
+            Text = "Set during Load";
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (!SawShowWindowMessage
+                && m.MsgInternal == PInvokeCore.WM_SHOWWINDOW
+                && m.WParamInternal != 0u)
+            {
+                SawShowWindowMessage = true;
+                WasWindowVisibleAtFirstShowWindowMessage = PInvoke.IsWindowVisible(this);
+                WindowTextAtFirstShowWindowMessage = PInvokeCore.GetWindowText(this);
+            }
+
+            base.WndProc(ref m);
+        }
+    }
+
     [WinFormsTheory]
     [BoolData]
     public void Form_Visible_SetWithHandlerWithHandle_CallsVisibleChanged(bool initialVisible)

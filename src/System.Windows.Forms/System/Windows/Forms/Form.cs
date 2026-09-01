@@ -2148,6 +2148,23 @@ public partial class Form : ContainerControl
         if (value)
         {
             CalledMakeVisible = true;
+            if (!CalledCreateControl)
+            {
+                // Force the handle (and any child controls) to be created now, while the window is
+                // still hidden. Windows registers a newly shown top-level window with the shell
+                // (taskbar) as part of its native processing of the show operation, before we would
+                // otherwise get a chance to run the Load event. Since Load is the earliest point at
+                // which user code can set Text (or other shell-visible attributes) for the very first
+                // time, deferring control creation until after the window is shown means the shell can
+                // register the window using stale (e.g. empty) attributes, and never revisit them if
+                // the window doesn't become the foreground window. Creating the control (which raises
+                // Load, below) before the window is actually shown ensures the native window already has
+                // its final attributes by the time it becomes visible to the OS/shell.
+                // See https://github.com/dotnet/winforms/issues/9770.
+                CreateControl(ignoreVisible: true);
+            }
+
+            bool calledOnLoadBeforeThisCall = CalledOnLoad;
             if (CalledCreateControl)
             {
                 if (CalledOnLoad)
@@ -2162,14 +2179,14 @@ public partial class Form : ContainerControl
                 {
                     CalledOnLoad = true;
                     OnLoad(EventArgs.Empty);
-                    if (_dialogResult != DialogResult.None)
-                    {
-                        // Don't show the dialog if the dialog result was set
-                        // in the OnLoad event.
-                        //
-                        value = false;
-                    }
                 }
+            }
+
+            if (!calledOnLoadBeforeThisCall && CalledOnLoad && _dialogResult != DialogResult.None)
+            {
+                // Don't show the dialog if the dialog result was set in the OnLoad event that just ran,
+                // whether that happened above or as a side effect of the forced CreateControl call.
+                value = false;
             }
         }
 
