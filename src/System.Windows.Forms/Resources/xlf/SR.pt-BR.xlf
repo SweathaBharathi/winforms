@@ -7894,6 +7894,16 @@ O rastreamento de pilha em que a operação ilegal ocorreu foi:
         <target state="translated">Indica se o painel deve ter uma borda.</target>
         <note />
       </trans-unit>
+      <trans-unit id="PanelOnRoundedCornersChangedDescr">
+        <source>Occurs when the value of the RoundedCorners property changes.</source>
+        <target state="new">Occurs when the value of the RoundedCorners property changes.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PanelRoundedCornersDescr">
+        <source>Indicates whether the panel's border, if any, is drawn with rounded corners.</source>
+        <target state="new">Indicates whether the panel's border, if any, is drawn with rounded corners.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ParentPropertyNotSetInGetNextControl">
         <source>{0} property should be set for {1}.</source>
         <target state="translated">A propriedade {0} deve ser definida para {1}.</target>

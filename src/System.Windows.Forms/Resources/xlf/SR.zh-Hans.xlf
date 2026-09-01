@@ -7894,6 +7894,16 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">指示面板是否应具有边框。</target>
         <note />
       </trans-unit>
+      <trans-unit id="PanelOnRoundedCornersChangedDescr">
+        <source>Occurs when the value of the RoundedCorners property changes.</source>
+        <target state="new">Occurs when the value of the RoundedCorners property changes.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PanelRoundedCornersDescr">
+        <source>Indicates whether the panel's border, if any, is drawn with rounded corners.</source>
+        <target state="new">Indicates whether the panel's border, if any, is drawn with rounded corners.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ParentPropertyNotSetInGetNextControl">
         <source>{0} property should be set for {1}.</source>
         <target state="translated">{0} 属性应为 {1} 设置。</target>

@@ -7894,6 +7894,16 @@ Analisi dello stack dove si è verificata l'operazione non valida:
         <target state="translated">Indica se il riquadro deve avere un bordo.</target>
         <note />
       </trans-unit>
+      <trans-unit id="PanelOnRoundedCornersChangedDescr">
+        <source>Occurs when the value of the RoundedCorners property changes.</source>
+        <target state="new">Occurs when the value of the RoundedCorners property changes.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PanelRoundedCornersDescr">
+        <source>Indicates whether the panel's border, if any, is drawn with rounded corners.</source>
+        <target state="new">Indicates whether the panel's border, if any, is drawn with rounded corners.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ParentPropertyNotSetInGetNextControl">
         <source>{0} property should be set for {1}.</source>
         <target state="translated">{0} proprietà deve essere impostata per {1}.</target>

@@ -4440,6 +4440,12 @@ Stack trace where the illegal operation occurred was:
   <data name="PanelBorderStyleDescr" xml:space="preserve">
     <value>Indicates whether the panel should have a border.</value>
   </data>
+  <data name="PanelRoundedCornersDescr" xml:space="preserve">
+    <value>Indicates whether the panel's border, if any, is drawn with rounded corners.</value>
+  </data>
+  <data name="PanelOnRoundedCornersChangedDescr" xml:space="preserve">
+    <value>Occurs when the value of the RoundedCorners property changes.</value>
+  </data>
   <data name="PropertyGridHelpPaneTitle" xml:space="preserve">
     <value>Description</value>
   </data>

@@ -608,6 +608,33 @@ public class PanelTests
     }
 
     [WinFormsFact]
+    public void Panel_RoundedCorners_Set_GetReturnsExpected()
+    {
+        using SubPanel control = new()
+        {
+            BorderStyle = BorderStyle.FixedSingle
+        };
+        Assert.False(control.RoundedCorners);
+
+        int changedCallCount = 0;
+        control.RoundedCornersChanged += (sender, e) => changedCallCount++;
+
+        control.RoundedCorners = true;
+        Assert.True(control.RoundedCorners);
+        Assert.Equal(1, changedCallCount);
+
+        // When RoundedCorners is true, the border is drawn manually in OnPaint instead of via
+        // the native WS_BORDER/WS_EX_CLIENTEDGE window styles, so CreateParams should not carry them.
+        CreateParams createParams = control.CreateParams;
+        Assert.Equal(0x56000000, createParams.Style);
+        Assert.Equal(0x10000, createParams.ExStyle);
+
+        // Set same, no additional event should be raised.
+        control.RoundedCorners = true;
+        Assert.Equal(1, changedCallCount);
+    }
+
+    [WinFormsFact]
     public void Panel_PreferredSize_GetWithChildrenSimple_ReturnsExpected()
     {
         using Panel control = new();

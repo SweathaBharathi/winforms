@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms.Layout;
 
@@ -19,6 +20,14 @@ namespace System.Windows.Forms;
 public partial class Panel : ScrollableControl
 {
     private BorderStyle _borderStyle = BorderStyle.None;
+
+    private static readonly int s_roundedCornersProperty = PropertyStore.CreateKey();
+    private static readonly object s_roundedCornersChangedEvent = new();
+
+    /// <summary>
+    ///  The radius, in pixels, used to draw the corners of the border when <see cref="RoundedCorners"/> is <see langword="true"/>.
+    /// </summary>
+    private const int BorderCornerRadius = 8;
 
     /// <summary>
     ///  Initializes a new instance of the <see cref="Panel"/> class.
@@ -111,6 +120,59 @@ public partial class Panel : ScrollableControl
     }
 
     /// <summary>
+    ///  Indicates whether the panel's border is drawn with rounded corners instead of square corners.
+    ///  This has no effect when <see cref="BorderStyle"/> is <see cref="BorderStyle.None"/>.
+    /// </summary>
+    [SRCategory(nameof(SR.CatAppearance))]
+    [DefaultValue(false)]
+    [SRDescription(nameof(SR.PanelRoundedCornersDescr))]
+    public bool RoundedCorners
+    {
+        get => Properties.GetValueOrDefault(s_roundedCornersProperty, false);
+        set
+        {
+            if (Properties.GetValueOrDefault(s_roundedCornersProperty, false) != value)
+            {
+                Properties.AddOrRemoveValue(s_roundedCornersProperty, value, defaultValue: false);
+
+                if (_borderStyle != BorderStyle.None)
+                {
+                    // The native border styles must be turned off/on so the border is drawn by
+                    // OnPaint instead of by Windows when rounded corners are requested.
+                    UpdateStyles();
+                }
+
+                Invalidate();
+                OnRoundedCornersChanged(EventArgs.Empty);
+            }
+        }
+    }
+
+    /// <summary>
+    ///  Occurs when the value of the <see cref="RoundedCorners"/> property changes.
+    /// </summary>
+    [SRCategory(nameof(SR.CatPropertyChanged))]
+    [SRDescription(nameof(SR.PanelOnRoundedCornersChangedDescr))]
+    public event EventHandler? RoundedCornersChanged
+    {
+        add => Events.AddHandler(s_roundedCornersChangedEvent, value);
+        remove => Events.RemoveHandler(s_roundedCornersChangedEvent, value);
+    }
+
+    /// <summary>
+    ///  Raises the <see cref="RoundedCornersChanged"/> event.
+    /// </summary>
+    /// <param name="e">An <see cref="EventArgs"/> that contains the event data.</param>
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    protected virtual void OnRoundedCornersChanged(EventArgs e)
+    {
+        if (Events[s_roundedCornersChangedEvent] is EventHandler handler)
+        {
+            handler(this, e);
+        }
+    }
+
+    /// <summary>
     ///  Returns the parameters needed to create the handle. Inheriting classes can override
     ///  this to provide extra functionality. They should not, however, forget to call
     ///  base.getCreateParams() first to get the struct filled up with the basic info.
@@ -124,12 +186,15 @@ public partial class Panel : ScrollableControl
             cp.ExStyle |= (int)WINDOW_EX_STYLE.WS_EX_CONTROLPARENT;
             cp.ExStyle &= ~(int)WINDOW_EX_STYLE.WS_EX_CLIENTEDGE;
 
+            // When rounded corners are requested, the border is painted by OnPaint instead of by
+            // the native window styles, since Windows always draws WS_BORDER/WS_EX_CLIENTEDGE with
+            // square corners.
             switch (_borderStyle)
             {
-                case BorderStyle.Fixed3D:
+                case BorderStyle.Fixed3D when !RoundedCorners:
                     cp.ExStyle |= (int)WINDOW_EX_STYLE.WS_EX_CLIENTEDGE;
                     break;
-                case BorderStyle.FixedSingle:
+                case BorderStyle.FixedSingle when !RoundedCorners:
                     cp.Style |= (int)WINDOW_STYLE.WS_BORDER;
                     break;
             }
@@ -203,6 +268,54 @@ public partial class Panel : ScrollableControl
     {
         add => base.TextChanged += value;
         remove => base.TextChanged -= value;
+    }
+
+    /// <summary>
+    ///  Paints the panel's border with rounded corners when <see cref="RoundedCorners"/> is
+    ///  <see langword="true"/>. The native border styles are suppressed by <see cref="CreateParams"/>
+    ///  in that case, since Windows always draws them with square corners.
+    /// </summary>
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+
+        if (RoundedCorners && _borderStyle != BorderStyle.None)
+        {
+            DrawRoundedBorder(e.Graphics);
+        }
+    }
+
+    private void DrawRoundedBorder(Graphics graphics)
+    {
+        // Deflate by 1 pixel so the border is drawn fully inside the client area, matching the
+        // behavior of the native FixedSingle/Fixed3D borders.
+        Rectangle bounds = ClientRectangle;
+        bounds.Width--;
+        bounds.Height--;
+
+        if (bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        Color borderColor = _borderStyle == BorderStyle.Fixed3D
+            ? SystemColors.ControlDark
+            : SystemColors.WindowFrame;
+
+        using GraphicsPath path = new();
+        path.AddRoundedRectangle(bounds, new Size(BorderCornerRadius, BorderCornerRadius));
+
+        SmoothingMode originalSmoothingMode = graphics.SmoothingMode;
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        try
+        {
+            using Pen pen = new(borderColor);
+            graphics.DrawPath(pen, path);
+        }
+        finally
+        {
+            graphics.SmoothingMode = originalSmoothingMode;
+        }
     }
 
     /// <summary>
