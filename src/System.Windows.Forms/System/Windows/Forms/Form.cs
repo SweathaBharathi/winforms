@@ -5826,6 +5826,22 @@ public partial class Form : ContainerControl
                     // Set the new parent.
                     PInvokeCore.SetWindowLong(this, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, ownerHwnd);
                 }
+
+                // Windows keeps topmost windows in a z-band above all other windows, regardless of
+                // ownership. This means an owned window that isn't itself topmost can still end up
+                // behind its topmost owner. Elevate this dialog into the topmost z-band for the
+                // duration of the modal loop so it isn't hidden behind a topmost owner. This is done
+                // at the native level only, so it doesn't affect the public TopMost property.
+                if (_formState[s_formStateTopMost] == 0
+                    && ((WINDOW_EX_STYLE)PInvokeCore.GetWindowLong(ownerHwnd.Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE))
+                        .HasFlag(WINDOW_EX_STYLE.WS_EX_TOPMOST))
+                {
+                    PInvoke.SetWindowPos(
+                        this,
+                        HWND.HWND_TOPMOST,
+                        0, 0, 0, 0,
+                        SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE);
+                }
             }
 
             try

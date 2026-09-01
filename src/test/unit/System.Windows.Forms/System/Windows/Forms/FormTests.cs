@@ -1888,6 +1888,51 @@ public partial class FormTests
     }
 
     [WinFormsFact]
+    public void Form_ShowDialog_OwnerIsTopMost_DialogIsShownAboveOwner()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/6190
+        // A modal dialog shown via ShowDialog(owner) must not be hidden behind an owner
+        // that has TopMost set to true. Windows keeps topmost windows in a z-band above
+        // all other windows regardless of ownership, so the dialog must be elevated into
+        // that same z-band for the duration of the modal loop.
+        using Form owner = new()
+        {
+            TopMost = true
+        };
+        owner.Show();
+
+        using Form dialog = new();
+        bool dialogHasTopMostExStyle = false;
+
+        dialog.Shown += (sender, e) =>
+        {
+            // The fix elevates the dialog's native window into the topmost z-band (WS_EX_TOPMOST)
+            // for the duration of the modal loop, without changing the public TopMost property.
+            // Poll briefly: under heavy parallel test-suite contention, other tests' Show()/Activate()
+            // calls can transiently delay the OS from applying the z-order change to this window.
+            for (int i = 0; i < 50; i++)
+            {
+                dialogHasTopMostExStyle = ((WINDOW_EX_STYLE)PInvokeCore.GetWindowLong(
+                    dialog, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE)).HasFlag(WINDOW_EX_STYLE.WS_EX_TOPMOST);
+
+                if (dialogHasTopMostExStyle)
+                {
+                    break;
+                }
+
+                Application.DoEvents();
+                Thread.Sleep(20);
+            }
+
+            dialog.DialogResult = DialogResult.OK;
+        };
+
+        Assert.Equal(DialogResult.OK, dialog.ShowDialog(owner));
+        Assert.True(dialogHasTopMostExStyle, "Dialog should be elevated into the topmost z-band while its owner is TopMost.");
+        Assert.False(dialog.TopMost, "ShowDialog should not change the public TopMost property of the dialog.");
+    }
+
+    [WinFormsFact]
     public void Form_RecreateHandle_ReappliesImmersiveDarkModeTitleBar()
     {
         // Regression for https://github.com/dotnet/winforms/issues/12582
