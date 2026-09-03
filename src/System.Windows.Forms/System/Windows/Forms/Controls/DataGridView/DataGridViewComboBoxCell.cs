@@ -2320,7 +2320,8 @@ public partial class DataGridViewComboBoxCell : DataGridViewCell
                             }
 
                             Color textColor;
-                            if (paintPostXPThemes && (drawDropDownButton || drawComboBox) && !SystemInformation.HighContrast)
+                            if (paintPostXPThemes && (drawDropDownButton || drawComboBox) && !SystemInformation.HighContrast &&
+                                !(Application.IsDarkModeEnabled && AppContextSwitches.DataGridViewDarkModeTheming))
                             {
                                 textColor = DataGridViewComboBoxCellRenderer.VisualStyleRenderer.GetColor(ColorProperty.TextColor);
                             }

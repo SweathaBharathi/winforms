@@ -733,7 +733,7 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                                 pbState |= PushButtonState.Default;
                             }
 
-                            DataGridViewButtonCellRenderer.DrawButton(g, valBounds, (int)pbState);
+                            DataGridViewButtonCellRenderer.DrawButton(g, valBounds, (int)pbState, cellStyle.BackColor);
                         }
 
                         resultBounds = valBounds;
@@ -972,8 +972,12 @@ public partial class DataGridViewButtonCell : DataGridViewCell
             {
                 Color textColor;
                 if (DataGridView.ApplyVisualStylesToInnerCells &&
-                    (FlatStyle == FlatStyle.System || FlatStyle == FlatStyle.Standard))
+                    (FlatStyle == FlatStyle.System || FlatStyle == FlatStyle.Standard) &&
+                    !(Application.IsDarkModeEnabled && AppContextSwitches.DataGridViewDarkModeTheming))
                 {
+                    // The "Button" visual style element's text color always reflects the light system
+                    // theme. In Dark Mode, use the cell's own ForeColor instead so button text stays
+                    // legible against the dark background painted by DataGridViewButtonCellRenderer.
                     textColor = DataGridViewButtonCellRenderer.DataGridViewButtonRenderer.GetColor(ColorProperty.TextColor);
                 }
                 else

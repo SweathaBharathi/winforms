@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
+using System.Reflection;
+using System.Windows.Forms.VisualStyles;
 
 namespace System.Windows.Forms.Tests;
 
@@ -479,6 +481,133 @@ public class DataGridViewButtonCellTests : IDisposable
 
         _dataGridViewButtonCell.DataGridView.Should().BeSameAs(dataGridView);
         dataGridViewCellStyle.Font.Should().Be(SystemFonts.DefaultFont);
+    }
+
+    [WinFormsFact]
+    public void DataGridViewButtonCellRenderer_DrawButton_DarkModeEnabled_FillsWithCellBackColor()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/11893:
+        // Button-type DataGridView cells kept the light "Button" visual style face color
+        // even when the application (and the rest of the grid) was themed for Dark Mode,
+        // because DataGridViewButtonCellRenderer.DrawButton always rendered the light-themed
+        // "Button" visual style element, ignoring Application.IsDarkModeEnabled.
+        //
+        // The renderer is invoked directly (via reflection) so this test is independent of
+        // DataGridView.ApplyVisualStylesToInnerCells (Application.RenderWithVisualStyles),
+        // which requires a common-controls-v6 manifest that isn't present in the test host.
+        SystemColorMode originalColorMode = Application.ColorMode;
+        try
+        {
+            Application.SetColorMode(SystemColorMode.Dark);
+
+            Type rendererType = typeof(DataGridViewButtonCell).GetNestedType(
+                "DataGridViewButtonCellRenderer",
+                BindingFlags.NonPublic)!;
+            MethodInfo drawButton = rendererType.GetMethod(
+                "DrawButton",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: [typeof(Graphics), typeof(Rectangle), typeof(int), typeof(Color)],
+                modifiers: null)!;
+
+            using Bitmap bitmap = new(40, 40);
+            using Graphics g = Graphics.FromImage(bitmap);
+            Color darkBackColor = Color.FromArgb(32, 32, 32);
+            Rectangle bounds = new(0, 0, 40, 40);
+
+            drawButton.Invoke(null, [g, bounds, (int)PushButtonState.Normal, darkBackColor]);
+
+            Color pixel = bitmap.GetPixel(20, 20);
+
+            // The button content area should be filled using the cell's dark BackColor
+            // rather than the light system "Button" visual style face color.
+            pixel.Should().Be(darkBackColor);
+        }
+        finally
+        {
+            Application.SetColorMode(originalColorMode);
+        }
+    }
+
+    [WinFormsFact]
+    public void Paint_DarkModeEnabled_SystemFlatStyle_UsesCellForeColorForButtonText()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/11893:
+        // With FlatStyle.System/Standard and visual styles applied, the button text color was
+        // always read from the "Button" visual style element (DataGridViewButtonRenderer.GetColor),
+        // which reflects the light system theme regardless of Application.IsDarkModeEnabled. This
+        // produced near-black text on the dark background painted for the button cell.
+        //
+        // This code path only runs when DataGridView.ApplyVisualStylesToInnerCells is true, which
+        // requires common-controls-v6 theming support in the test host; skip otherwise, matching
+        // the existing GetPreferredSize_UsesThemeMargins_WhenVisualStylesApplied test's pattern.
+        if (!DataGridView.ApplyVisualStylesToInnerCells)
+        {
+            return;
+        }
+
+        SystemColorMode originalColorMode = Application.ColorMode;
+        try
+        {
+            Application.SetColorMode(SystemColorMode.Dark);
+
+            using Bitmap bitmap = new(60, 20);
+            using Graphics g = Graphics.FromImage(bitmap);
+            using DataGridView dataGridView = new();
+            dataGridView.Columns.Add(new DataGridViewButtonColumn { FlatStyle = FlatStyle.System });
+            dataGridView.Rows.Add();
+            dataGridView[0, 0] = _dataGridViewButtonCell;
+
+            Color lightForeColor = Color.White;
+            DataGridViewCellStyle dataGridViewCellStyle = new()
+            {
+                Font = SystemFonts.DefaultFont,
+                BackColor = Color.FromArgb(32, 32, 32),
+                ForeColor = lightForeColor
+            };
+            DataGridViewAdvancedBorderStyle advancedBorderStyle = new();
+
+            _dataGridViewButtonCell.TestAccessor.Dynamic.Paint(
+                g,
+                new Rectangle(0, 0, 60, 20),
+                new Rectangle(0, 0, 60, 20),
+                0,
+                DataGridViewElementStates.None,
+                "value",
+                "OK",
+                null,
+                dataGridViewCellStyle,
+                advancedBorderStyle,
+                DataGridViewPaintParts.All);
+
+            // Find the darkest pixel painted in the cell's interior (excluding a margin around
+            // the edges to avoid sampling the button border) and assert it is light/legible
+            // rather than near-black. The background is a known dark color (luminance 32), so if
+            // text is still painted with the near-black visual-style text color, the darkest
+            // interior pixel will be substantially darker than the background.
+            const int margin = 6;
+            byte minLuminance = byte.MaxValue;
+            for (int x = margin; x < bitmap.Width - margin; x++)
+            {
+                for (int y = margin; y < bitmap.Height - margin; y++)
+                {
+                    Color c = bitmap.GetPixel(x, y);
+                    byte luminance = (byte)((c.R + c.G + c.B) / 3);
+                    if (luminance < minLuminance)
+                    {
+                        minLuminance = luminance;
+                    }
+                }
+            }
+
+            // The text should be drawn using the light ForeColor, so the darkest interior pixel
+            // should be no darker than the (already dark) cell background.
+            minLuminance.Should().BeGreaterThanOrEqualTo((byte)28);
+        }
+        finally
+        {
+            Application.SetColorMode(originalColorMode);
+        }
     }
 
     [Fact]
