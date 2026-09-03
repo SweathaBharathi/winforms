@@ -244,4 +244,36 @@ public class ToolStripLabelTests : IDisposable
 
         result.Should().Be(expected);
     }
+
+    [WinFormsFact]
+    public void ToolStripLabel_AutoEllipsis_True_AppliesEndEllipsisTextFormatFlag()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/6531:
+        // ToolStripLabel (and ToolStripStatusLabel, which derives from it) did not support
+        // AutoEllipsis, so overflowing text was always truncated without a trailing ellipsis.
+        using ToolStrip toolStrip = new();
+        using ToolStripLabel toolStripLabel = new("Some very long text that will not fit in a small label")
+        {
+            AutoEllipsis = true
+        };
+        toolStrip.Items.Add(toolStripLabel);
+
+        TextFormatFlags? capturedFormat = null;
+        void Handler(object? sender, ToolStripItemTextRenderEventArgs e) => capturedFormat = e.TextFormat;
+
+        toolStrip.Renderer!.RenderItemText += Handler;
+        try
+        {
+            using Bitmap bitmap = new(10, 10);
+            using Graphics graphics = Graphics.FromImage(bitmap);
+            toolStripLabel.TestAccessor.Dynamic.PaintText(graphics);
+        }
+        finally
+        {
+            toolStrip.Renderer!.RenderItemText -= Handler;
+        }
+
+        capturedFormat.Should().NotBeNull();
+        capturedFormat!.Value.Should().HaveFlag(TextFormatFlags.EndEllipsis);
+    }
 }

@@ -23,6 +23,7 @@ public partial class ToolStripLabel : ToolStripItem
     private Font? _hoverLinkFont;
     private Font? _linkFont;
     private Cursor? _lastCursor;
+    private bool _autoEllipsis;
 
     /// <summary>
     ///  A non selectable ToolStrip item
@@ -65,6 +66,27 @@ public partial class ToolStripLabel : ToolStripItem
     public override bool CanSelect
     {
         get { return (IsLink || DesignMode); }
+    }
+
+    /// <summary>
+    ///  Gets or sets a value indicating whether the ellipsis character (...) appears at the right edge of the
+    ///  <see cref="ToolStripLabel"/>, denoting that the text extends beyond the specified length of the
+    ///  <see cref="ToolStripLabel"/>.
+    /// </summary>
+    [DefaultValue(false)]
+    [SRCategory(nameof(SR.CatBehavior))]
+    [SRDescription(nameof(SR.ToolStripLabelAutoEllipsisDescr))]
+    public bool AutoEllipsis
+    {
+        get => _autoEllipsis;
+        set
+        {
+            if (_autoEllipsis != value)
+            {
+                _autoEllipsis = value;
+                Invalidate();
+            }
+        }
     }
 
     [DefaultValue(false)]
@@ -373,7 +395,13 @@ public partial class ToolStripLabel : ToolStripItem
             }
 
             Rectangle textRect = InternalLayout.TextRectangle;
-            renderer.DrawItemText(new ToolStripItemTextRenderEventArgs(g, this, Text, textRect, textColor, font, InternalLayout.TextFormat));
+            TextFormatFlags textFormat = InternalLayout.TextFormat;
+            if (AutoEllipsis)
+            {
+                textFormat |= TextFormatFlags.EndEllipsis;
+            }
+
+            renderer.DrawItemText(new ToolStripItemTextRenderEventArgs(g, this, Text, textRect, textColor, font, textFormat));
         }
     }
 

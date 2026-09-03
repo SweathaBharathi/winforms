@@ -5952,6 +5952,9 @@ Stack trace where the illegal operation occurred was:
   <data name="ToolStripLabelActiveLinkColorDescr" xml:space="preserve">
     <value>Specifies the color of the link when the link is active.</value>
   </data>
+  <data name="ToolStripLabelAutoEllipsisDescr" xml:space="preserve">
+    <value>Enables the automatic handling of text that extends beyond the width of the label.</value>
+  </data>
   <data name="ToolStripLabelIsLinkDescr" xml:space="preserve">
     <value>Specifies whether the label acts as a link.</value>
   </data>

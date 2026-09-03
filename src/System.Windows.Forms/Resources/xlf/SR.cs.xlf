@@ -10494,6 +10494,11 @@ Trasování zásobníku, kde došlo k neplatné operaci:
         <target state="translated">Určuje barvu odkazu, pokud je odkaz aktivní.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripLabelAutoEllipsisDescr">
+        <source>Enables the automatic handling of text that extends beyond the width of the label.</source>
+        <target state="new">Enables the automatic handling of text that extends beyond the width of the label.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripLabelIsLinkDescr">
         <source>Specifies whether the label acts as a link.</source>
         <target state="translated">Určuje, zda má popisek fungovat jako odkaz.</target>

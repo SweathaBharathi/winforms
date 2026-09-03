@@ -10494,6 +10494,11 @@ Stos śledzenia, w którym wystąpiła zabroniona operacja:
         <target state="translated">Określa kolor łącza, gdy łącze jest aktywne.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripLabelAutoEllipsisDescr">
+        <source>Enables the automatic handling of text that extends beyond the width of the label.</source>
+        <target state="new">Enables the automatic handling of text that extends beyond the width of the label.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripLabelIsLinkDescr">
         <source>Specifies whether the label acts as a link.</source>
         <target state="translated">Określa, czy etykieta zachowuje się jak łącze.</target>

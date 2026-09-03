@@ -10494,6 +10494,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">リンクがアクティブなときのリンクの色を指定します。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripLabelAutoEllipsisDescr">
+        <source>Enables the automatic handling of text that extends beyond the width of the label.</source>
+        <target state="new">Enables the automatic handling of text that extends beyond the width of the label.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripLabelIsLinkDescr">
         <source>Specifies whether the label acts as a link.</source>
         <target state="translated">ラベルが、リンクとして動作するかどうかを指定します。</target>

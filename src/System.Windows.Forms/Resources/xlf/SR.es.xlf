@@ -10494,6 +10494,11 @@ El seguimiento de la pila donde tuvo lugar la operación no válida fue:
         <target state="translated">Especifica el color del vínculo cuando el vínculo está activo.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripLabelAutoEllipsisDescr">
+        <source>Enables the automatic handling of text that extends beyond the width of the label.</source>
+        <target state="new">Enables the automatic handling of text that extends beyond the width of the label.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripLabelIsLinkDescr">
         <source>Specifies whether the label acts as a link.</source>
         <target state="translated">Especifica si la etiqueta actúa como vínculo.</target>
