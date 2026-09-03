@@ -856,9 +856,11 @@ public partial class Form : ContainerControl
     }
 
     /// <summary>
-    ///  The default icon used by the Form. This is the standard "windows forms" icon.
+    ///  Gets or sets the default icon used by a <see cref="Form"/> that does not have its own
+    ///  <see cref="Icon"/> explicitly set. This is the standard "windows forms" icon unless overridden.
     /// </summary>
-    internal static Icon DefaultIcon
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    public static Icon DefaultIcon
     {
         get
         {
@@ -873,6 +875,11 @@ public partial class Form : ContainerControl
             }
 
             return s_defaultIcon;
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            s_defaultIcon = value;
         }
     }
 

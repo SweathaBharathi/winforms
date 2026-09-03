@@ -209,6 +209,33 @@ public partial class FormTests
     }
 
     [WinFormsFact]
+    public void Form_DefaultIcon_GetSet_ReturnsExpected()
+    {
+        Icon originalDefaultIcon = Form.DefaultIcon;
+
+        try
+        {
+            using Icon customIcon = new(originalDefaultIcon, 16, 16);
+            Form.DefaultIcon = customIcon;
+            Assert.Same(customIcon, Form.DefaultIcon);
+
+            // A form that has not had its own Icon explicitly set falls back to the new default.
+            using Form form = new();
+            Assert.Same(customIcon, form.Icon);
+        }
+        finally
+        {
+            Form.DefaultIcon = originalDefaultIcon;
+        }
+    }
+
+    [WinFormsFact]
+    public void Form_DefaultIcon_SetNull_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => Form.DefaultIcon = null!);
+    }
+
+    [WinFormsFact]
     public void Form_AcceptButtonGetSet()
     {
         using Form form = new();
