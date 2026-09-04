@@ -10949,6 +10949,11 @@ El seguimiento de la pila donde tuvo lugar la operación no válida fue:
         <target state="translated">Posición del nodo de árbol en la colección de nodos de árbol.</target>
         <note />
       </trans-unit>
+      <trans-unit id="TreeNodeIsBoldDescr">
+        <source>Indicates whether the tree node label is displayed in bold font.</source>
+        <target state="new">Indicates whether the tree node label is displayed in bold font.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TreeNodeNoParent">
         <source>Full path can only be retrieved when a TreeNode has been added to a TreeView. This TreeNode has not been added to a TreeView.</source>
         <target state="translated">Sólo se puede recuperar la ruta de acceso completa cuando se ha agregado un TreeNode a TreeView. Este TreeNode no se agregó a TreeView.</target>

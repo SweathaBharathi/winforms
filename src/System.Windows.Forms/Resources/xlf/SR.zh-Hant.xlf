@@ -10949,6 +10949,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">樹狀節點集合中樹狀節點的位置。</target>
         <note />
       </trans-unit>
+      <trans-unit id="TreeNodeIsBoldDescr">
+        <source>Indicates whether the tree node label is displayed in bold font.</source>
+        <target state="new">Indicates whether the tree node label is displayed in bold font.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TreeNodeNoParent">
         <source>Full path can only be retrieved when a TreeNode has been added to a TreeView. This TreeNode has not been added to a TreeView.</source>
         <target state="translated">當 TreeNode 加入 TreeView 後，才能擷取完整的路徑資訊。這個 TreeNode 尚未加入 TreeView 中。</target>

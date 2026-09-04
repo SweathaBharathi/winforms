@@ -25,7 +25,6 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
     private const TREE_VIEW_ITEM_STATE_FLAGS CHECKED = (TREE_VIEW_ITEM_STATE_FLAGS)(2 << SHIFTVAL);
     private const TREE_VIEW_ITEM_STATE_FLAGS UNCHECKED = (TREE_VIEW_ITEM_STATE_FLAGS)(1 << SHIFTVAL);
     private const int ALLOWEDIMAGES = 14;
-    private const int TREENODESTATE_isBold = 0x00000002;
 
     // the threshold value used to optimize AddRange and Clear operations for a big number of nodes
     internal const int MAX_TREENODES_OPS = 200;
@@ -42,6 +41,11 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
     // find out the check state of a node, and not this member variable.
     // private bool isChecked = false;
     private const int TREENODESTATE_isChecked = 0x00000001;
+
+    // note: as the bold state of a node is user controlled, and this variable is simply for
+    // state caching when a node hasn't yet been realized, you should use the IsBold property to
+    // find out the bold state of a node, and not this member variable.
+    private const int TREENODESTATE_isBold = 0x00000002;
 
     private Collections.Specialized.BitVector32 _treeNodeState;
 
@@ -166,39 +170,6 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
         : this()
     {
         Deserialize(serializationInfo, context);
-    }
-
-    /// <summary>
-    ///  Gets or sets a value indicating whether the tree node label is displayed in bold.
-    /// </summary>
-    [SRCategory(nameof(SR.CatAppearance))]
-    [DefaultValue(false)]
-    [Browsable(true)]
-    public bool IsBold
-    {
-        get => _treeNodeState[TREENODESTATE_isBold];
-        set
-        {
-
-            TreeView tv = TreeView;
-
-            if (tv is null || _treeNodeState[TREENODESTATE_isBold] == value)
-            {
-                return;
-            }
-
-            _treeNodeState[TREENODESTATE_isBold] = value;
-
-            TVITEMW item = new()
-            {
-                mask = TVITEM_MASK.TVIF_STATE,
-                hItem = (HTREEITEM)Handle,
-                stateMask = TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD,
-                state = value ? TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD : 0
-            };
-
-            PInvokeCore.SendMessage(tv, PInvoke.TVM_SETITEMW, 0, ref item);
-        }
     }
 
     /// <summary>
@@ -392,6 +363,55 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
             {
                 CheckedInternal = value;
             }
+        }
+    }
+
+    internal bool BoldStateInternal
+    {
+        get => _treeNodeState[TREENODESTATE_isBold];
+        set => _treeNodeState[TREENODESTATE_isBold] = value;
+    }
+
+    /// <summary>
+    ///  Gets or sets a value indicating whether the tree node label is displayed in bold font.
+    /// </summary>
+    [SRCategory(nameof(SR.CatAppearance))]
+    [SRDescription(nameof(SR.TreeNodeIsBoldDescr))]
+    [DefaultValue(false)]
+    public unsafe bool IsBold
+    {
+        get => BoldStateInternal;
+        set
+        {
+            if (BoldStateInternal == value)
+            {
+                return;
+            }
+
+            // Always cache the state, even if the node hasn't been realized (added to a TreeView
+            // with a created handle) yet, mirroring the Checked/CheckedInternal pattern above.
+            BoldStateInternal = value;
+
+            if (HTREEITEMInternal == IntPtr.Zero)
+            {
+                return;
+            }
+
+            TreeView? tv = TreeView;
+            if (tv is null || !tv.IsHandleCreated || tv.IsDisposed)
+            {
+                return;
+            }
+
+            TVITEMW item = new()
+            {
+                mask = TVITEM_MASK.TVIF_HANDLE | TVITEM_MASK.TVIF_STATE,
+                hItem = HTREEITEMInternal,
+                stateMask = TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD,
+                state = value ? TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD : 0
+            };
+
+            PInvokeCore.SendMessage(tv, PInvoke.TVM_SETITEMW, 0, ref item);
         }
     }
 
@@ -1424,6 +1444,7 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
         }
 
         node.Checked = Checked;
+        node.IsBold = IsBold;
         node.Tag = Tag;
 
         return node;
@@ -1541,6 +1562,9 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
                     break;
                 case "IsChecked":
                     CheckedStateInternal = serializationInfo.GetBoolean(entry.Name);
+                    break;
+                case "IsBold":
+                    BoldStateInternal = serializationInfo.GetBoolean(entry.Name);
                     break;
                 case nameof(ImageIndex):
                     imageIndex = serializationInfo.GetInt32(entry.Name);
@@ -1893,6 +1917,15 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
                 tvis.item.state = (TREE_VIEW_ITEM_STATE_FLAGS)((StateImageIndexer.ActualIndex + 1) << SHIFTVAL);
             }
 
+            if (BoldStateInternal)
+            {
+                // Apply the cached bold state (set before this node was realized) so it isn't
+                // lost when the underlying native tree-view item is created.
+                tvis.item.mask |= TVITEM_MASK.TVIF_STATE;
+                tvis.item.stateMask |= TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD;
+                tvis.item.state |= TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD;
+            }
+
             if (tvis.item.iImage >= 0)
             {
                 tvis.item.mask |= TVITEM_MASK.TVIF_IMAGE;
@@ -2090,6 +2123,7 @@ public partial class TreeNode : MarshalByRefObject, ICloneable, ISerializable
         si.AddValue(nameof(ToolTipText), _toolTipText);
         si.AddValue(nameof(Name), Name);
         si.AddValue("IsChecked", _treeNodeState[TREENODESTATE_isChecked]);
+        si.AddValue("IsBold", _treeNodeState[TREENODESTATE_isBold]);
         si.AddValue(nameof(ImageIndex), ImageIndexer.Index);
         si.AddValue(nameof(ImageKey), ImageIndexer.Key);
         si.AddValue(nameof(SelectedImageIndex), SelectedImageIndexer.Index);

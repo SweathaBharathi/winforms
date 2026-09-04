@@ -10949,6 +10949,11 @@ Cette opération non conforme s'est produite sur la trace de la pile :
         <target state="translated">La position du nœud d'arbre dans la collection de nœud d'arbre.</target>
         <note />
       </trans-unit>
+      <trans-unit id="TreeNodeIsBoldDescr">
+        <source>Indicates whether the tree node label is displayed in bold font.</source>
+        <target state="new">Indicates whether the tree node label is displayed in bold font.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TreeNodeNoParent">
         <source>Full path can only be retrieved when a TreeNode has been added to a TreeView. This TreeNode has not been added to a TreeView.</source>
         <target state="translated">Le chemin d'accès complet ne peut être extrait que lorsqu'un TreeNode a été ajouté à un TreeView. Ce TreeNode n'a pas été ajouté à un TreeView.</target>

@@ -702,6 +702,55 @@ public class TreeNodeTests
     }
 
     [WinFormsTheory]
+    [BoolData]
+    public void TreeNode_IsBold_Set_GetReturnsExpected(bool value)
+    {
+        // Regression test: setting IsBold before the node is added to a TreeView (i.e. while
+        // node.TreeView is still null) must still cache the value so it is honored once the
+        // node is later realized. See https://github.com/dotnet/winforms/issues/2788.
+        TreeNode node = new()
+        {
+            IsBold = value
+        };
+        Assert.Equal(value, node.IsBold);
+
+        // Set same
+        node.IsBold = value;
+        Assert.Equal(value, node.IsBold);
+
+        // Set different
+        node.IsBold = !value;
+        Assert.Equal(!value, node.IsBold);
+    }
+
+    [WinFormsTheory]
+    [BoolData]
+    public void TreeNode_IsBold_SetBeforeAddedToTreeView_StatePreservedAfterRealization(bool value)
+    {
+        // Regression test for the reported fix: the cached bold state set on an unrealized node
+        // must survive and be applied once the node is added to a TreeView with a created handle.
+        TreeNode node = new()
+        {
+            IsBold = value
+        };
+
+        using TreeView control = new();
+        control.Nodes.Add(node);
+        Assert.NotEqual(IntPtr.Zero, control.Handle);
+
+        Assert.Equal(value, node.IsBold);
+
+        TVITEMW item = new()
+        {
+            mask = TVITEM_MASK.TVIF_HANDLE | TVITEM_MASK.TVIF_STATE,
+            stateMask = TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD,
+            hItem = node.HTREEITEM
+        };
+        Assert.Equal(1, (int)PInvokeCore.SendMessage(control, PInvoke.TVM_GETITEMW, 0, ref item));
+        Assert.Equal(value ? TREE_VIEW_ITEM_STATE_FLAGS.TVIS_BOLD : 0, item.state);
+    }
+
+    [WinFormsTheory]
     [CommonMemberData(typeof(CommonTestHelper), nameof(CommonTestHelper.GetColorWithEmptyTheoryData))]
     public void TreeNode_ForeColor_Set_GetReturnsExpected(Color value)
     {

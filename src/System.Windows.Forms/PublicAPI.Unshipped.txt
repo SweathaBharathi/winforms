@@ -135,3 +135,5 @@ System.Windows.Forms.KioskModeManager.ToggleFullScreenKeys.get -> System.Windows
 System.Windows.Forms.KioskModeManager.ToggleFullScreenKeys.set -> void
 System.Windows.Forms.KioskModeManager.TopMostInFullScreen.get -> bool
 System.Windows.Forms.KioskModeManager.TopMostInFullScreen.set -> void
+System.Windows.Forms.TreeNode.IsBold.get -> bool
+System.Windows.Forms.TreeNode.IsBold.set -> void
