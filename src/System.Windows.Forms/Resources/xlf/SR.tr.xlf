@@ -8954,6 +8954,11 @@ Geçersiz işlemin gerçekleştiği yığın izi:
         <target state="translated">Seçim kenar boşluklarını açar/kapatır.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">Şu anda seçili olan metnin içeriğinin çevresindeki korumayı açar/kapatır.</target>

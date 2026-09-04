@@ -8954,6 +8954,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">선택 영역 여백을 설정하거나 해제합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">현재 선택한 텍스트 내용의 보호를 설정하거나 해제합니다.</target>

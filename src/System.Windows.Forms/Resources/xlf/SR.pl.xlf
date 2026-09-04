@@ -8954,6 +8954,11 @@ Stos śledzenia, w którym wystąpiła zabroniona operacja:
         <target state="translated">Włącza/wyłącza margines zaznaczania.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">Włącza/wyłącza ochronę zawartości zaznaczonego tekstu.</target>

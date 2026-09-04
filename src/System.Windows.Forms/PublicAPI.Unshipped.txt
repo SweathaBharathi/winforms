@@ -1,4 +1,11 @@
 #nullable enable
+System.Windows.Forms.RichTextBoxSelectionAlignment
+System.Windows.Forms.RichTextBoxSelectionAlignment.Center = 2 -> System.Windows.Forms.RichTextBoxSelectionAlignment
+System.Windows.Forms.RichTextBoxSelectionAlignment.Justify = 3 -> System.Windows.Forms.RichTextBoxSelectionAlignment
+System.Windows.Forms.RichTextBoxSelectionAlignment.Left = 0 -> System.Windows.Forms.RichTextBoxSelectionAlignment
+System.Windows.Forms.RichTextBoxSelectionAlignment.Right = 1 -> System.Windows.Forms.RichTextBoxSelectionAlignment
+System.Windows.Forms.RichTextBox.SelectionParagraphAlignment.get -> System.Windows.Forms.RichTextBoxSelectionAlignment
+System.Windows.Forms.RichTextBox.SelectionParagraphAlignment.set -> void
 override System.Windows.Forms.GroupBox.OnPaintBackground(System.Windows.Forms.PaintEventArgs! pevent) -> void
 static System.Windows.Forms.Application.SystemVisualSettings.get -> System.Windows.Forms.SystemVisualSettings!
 static System.Windows.Forms.Application.SystemVisualSettingsChanged -> System.Windows.Forms.SystemVisualSettingsChangedEventHandler?

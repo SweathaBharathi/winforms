@@ -694,11 +694,11 @@ public partial class RichTextBox : TextBoxBase
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     [SRDescription(nameof(SR.RichTextBoxSelAlignment))]
-    public unsafe ParagraphAlignment SelectionAlignment
+    public unsafe HorizontalAlignment SelectionAlignment
     {
         get
         {
-            ParagraphAlignment selectionAlignment = ParagraphAlignment.Left;
+            HorizontalAlignment selectionAlignment = HorizontalAlignment.Left;
 
             ForceHandleCreate();
             PARAFORMAT pf = new()
@@ -715,15 +715,15 @@ public partial class RichTextBox : TextBoxBase
                 switch (pf.wAlignment)
                 {
                     case PFA.LEFT:
-                        selectionAlignment = ParagraphAlignment.Left;
+                        selectionAlignment = HorizontalAlignment.Left;
                         break;
 
                     case PFA.RIGHT:
-                        selectionAlignment = ParagraphAlignment.Right;
+                        selectionAlignment = HorizontalAlignment.Right;
                         break;
 
                     case PFA.CENTER:
-                        selectionAlignment = ParagraphAlignment.Center;
+                        selectionAlignment = HorizontalAlignment.Center;
                         break;
                 }
             }
@@ -744,19 +744,101 @@ public partial class RichTextBox : TextBoxBase
 
             switch (value)
             {
-                case ParagraphAlignment.Left:
+                case HorizontalAlignment.Left:
                     pf.wAlignment = PFA.LEFT;
                     break;
 
-                case ParagraphAlignment.Right:
+                case HorizontalAlignment.Right:
                     pf.wAlignment = PFA.RIGHT;
                     break;
 
-                case ParagraphAlignment.Center:
+                case HorizontalAlignment.Center:
+                    pf.wAlignment = PFA.CENTER;
+                    break;
+            }
+
+            // Set the format for our current paragraph or selection.
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_SETPARAFORMAT, 0, ref pf);
+        }
+    }
+
+    /// <summary>
+    ///  Gets or sets the alignment of the paragraphs in a RichTextBox control, including
+    ///  support for the <see cref="RichTextBoxSelectionAlignment.Justify"/> value, which is not
+    ///  representable by <see cref="HorizontalAlignment"/> and therefore cannot be exposed through
+    ///  <see cref="SelectionAlignment"/> without a breaking change to that shared enum.
+    /// </summary>
+    [DefaultValue(RichTextBoxSelectionAlignment.Left)]
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    [SRDescription(nameof(SR.RichTextBoxSelParagraphAlignment))]
+    public unsafe RichTextBoxSelectionAlignment SelectionParagraphAlignment
+    {
+        get
+        {
+            RichTextBoxSelectionAlignment selectionAlignment = RichTextBoxSelectionAlignment.Left;
+
+            ForceHandleCreate();
+            PARAFORMAT pf = new()
+            {
+                cbSize = (uint)sizeof(PARAFORMAT)
+            };
+
+            // Get the format for our currently selected paragraph.
+            PInvokeCore.SendMessage(this, PInvokeCore.EM_GETPARAFORMAT, 0, ref pf);
+
+            // check if alignment has been set yet
+            if ((PFM.ALIGNMENT & pf.dwMask) != 0)
+            {
+                switch (pf.wAlignment)
+                {
+                    case PFA.LEFT:
+                        selectionAlignment = RichTextBoxSelectionAlignment.Left;
+                        break;
+
+                    case PFA.RIGHT:
+                        selectionAlignment = RichTextBoxSelectionAlignment.Right;
+                        break;
+
+                    case PFA.CENTER:
+                        selectionAlignment = RichTextBoxSelectionAlignment.Center;
+                        break;
+
+                    case PFA.JUSTIFY:
+                        selectionAlignment = RichTextBoxSelectionAlignment.Justify;
+                        break;
+                }
+            }
+
+            return selectionAlignment;
+        }
+        set
+        {
+            // valid values are 0x0 to 0x3
+            SourceGenerated.EnumValidator.Validate(value);
+
+            ForceHandleCreate();
+            PARAFORMAT pf = new()
+            {
+                cbSize = (uint)sizeof(PARAFORMAT),
+                dwMask = PFM.ALIGNMENT
+            };
+
+            switch (value)
+            {
+                case RichTextBoxSelectionAlignment.Left:
+                    pf.wAlignment = PFA.LEFT;
+                    break;
+
+                case RichTextBoxSelectionAlignment.Right:
+                    pf.wAlignment = PFA.RIGHT;
+                    break;
+
+                case RichTextBoxSelectionAlignment.Center:
                     pf.wAlignment = PFA.CENTER;
                     break;
 
-                case ParagraphAlignment.Justified:
+                case RichTextBoxSelectionAlignment.Justify:
                     pf.wAlignment = PFA.JUSTIFY;
                     break;
             }

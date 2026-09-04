@@ -8954,6 +8954,11 @@ El seguimiento de la pila donde tuvo lugar la operación no válida fue:
         <target state="translated">Activa o desactiva el margen de selección.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">Activa o desactiva la protección alrededor del contenido del texto seleccionado actualmente.</target>

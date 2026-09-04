@@ -8954,6 +8954,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">開啟/關閉選取範圍邊界。</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">開啟/關閉目前所選取文字內容周圍的保護。</target>

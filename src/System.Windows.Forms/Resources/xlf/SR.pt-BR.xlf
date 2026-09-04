@@ -8954,6 +8954,11 @@ O rastreamento de pilha em que a operação ilegal ocorreu foi:
         <target state="translated">Ativa/desativa a margem de seleção.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">Ativa/desativa a proteção ao redor do conteúdo do texto atualmente selecionado.</target>

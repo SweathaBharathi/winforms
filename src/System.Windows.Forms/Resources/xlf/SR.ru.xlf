@@ -8954,6 +8954,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">Включает/Отключает поле при выделении.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">Включает/Отключает защиту содержимого выделенного в текущий момент текста.</target>

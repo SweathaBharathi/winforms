@@ -8954,6 +8954,11 @@ Trasování zásobníku, kde došlo k neplatné operaci:
         <target state="translated">Zapíná nebo vypíná okraj výběru.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">Zapíná nebo vypíná ochranu kolem obsahu aktuálně vybraného textu.</target>

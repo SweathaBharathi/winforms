@@ -3762,6 +3762,21 @@ public partial class RichTextBoxTests
         Assert.Equal(0, createdCallCount);
     }
 
+    [WinFormsFact]
+    public void RichTextBox_SelectionParagraphAlignment_SetJustify_GetReturnsExpected()
+    {
+        using RichTextBox control = new();
+        Assert.NotEqual(IntPtr.Zero, control.Handle);
+
+        control.SelectionParagraphAlignment = RichTextBoxSelectionAlignment.Justify;
+
+        Assert.Equal(RichTextBoxSelectionAlignment.Justify, control.SelectionParagraphAlignment);
+
+        // Verify that the shared HorizontalAlignment-based property is unaffected, since Justify
+        // has no representation in HorizontalAlignment.
+        Assert.Equal(HorizontalAlignment.Left, control.SelectionAlignment);
+    }
+
     [WinFormsTheory]
     [InlineData(HorizontalAlignment.Left, 1)]
     [InlineData(HorizontalAlignment.Center, 3)]

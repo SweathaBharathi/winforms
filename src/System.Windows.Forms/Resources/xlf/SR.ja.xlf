@@ -8954,6 +8954,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">選択した余白をオン/オフにします。</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">現在選択されているテキストの内容の周囲に対する保護をオン/オフにします。</target>

@@ -8954,6 +8954,11 @@ Cette opération non conforme s'est produite sur la trace de la pile :
         <target state="translated">Active/désactive la marge de sélection.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RichTextBoxSelParagraphAlignment">
+        <source>Defines the alignment of the currently selected paragraph, including support for justified text.</source>
+        <target state="new">Defines the alignment of the currently selected paragraph, including support for justified text.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RichTextBoxSelProtected">
         <source>Turns on/off protection around the contents of the currently selected text.</source>
         <target state="translated">Active/désactive la protection autour du contenu du texte actuellement sélectionné.</target>
