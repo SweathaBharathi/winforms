@@ -10534,6 +10534,11 @@ O rastreamento de pilha em que a operação ilegal ocorreu foi:
         <target state="translated">Ocorre quando o estilo de layout de ToolStrip é alterado.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripMenuItemBreakDescr">
+        <source>Indicates whether this item starts a new column when displayed in a drop-down menu.</source>
+        <target state="new">Indicates whether this item starts a new column when displayed in a drop-down menu.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripMenuItemShortcutKeyDisplayStringDescr">
         <source>The string to be displayed as the shortcut key.</source>
         <target state="translated">A cadeia de caracteres a ser exibida como tecla de atalho.</target>

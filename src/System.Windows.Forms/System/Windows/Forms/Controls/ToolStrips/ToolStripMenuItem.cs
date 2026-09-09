@@ -26,6 +26,7 @@ public partial class ToolStripMenuItem : ToolStripDropDownItem
     private static readonly int s_propMdiForm = PropertyStore.CreateKey();
 
     private bool _checkOnClick;
+    private bool _break;
     private bool _showShortcutKeys = true;
     private ToolStrip? _lastOwner;
 
@@ -287,6 +288,28 @@ public partial class ToolStripMenuItem : ToolStripDropDownItem
     {
         get => _checkOnClick;
         set => _checkOnClick = value;
+    }
+
+    /// <summary>
+    ///  Gets or sets a value indicating whether this item starts a new column when it is displayed in a
+    ///  <see cref="ToolStripDropDownMenu"/> (such as a <see cref="ContextMenuStrip"/> or <see cref="MenuStrip"/>
+    ///  drop-down). This corresponds to the native <c>MFT_MENUBARBREAK</c>/<c>MFT_MENUBREAK</c> menu item flags:
+    ///  the item itself becomes the first item of the new column.
+    /// </summary>
+    [DefaultValue(false)]
+    [SRCategory(nameof(SR.CatLayout))]
+    [SRDescription(nameof(SR.ToolStripMenuItemBreakDescr))]
+    public bool Break
+    {
+        get => _break;
+        set
+        {
+            if (value != _break)
+            {
+                _break = value;
+                InvalidateItemLayout(PropertyNames.FlowBreak);
+            }
+        }
     }
 
     /// <summary>

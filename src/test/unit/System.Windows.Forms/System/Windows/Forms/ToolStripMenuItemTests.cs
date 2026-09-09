@@ -48,6 +48,7 @@ public class ToolStripMenuItemTests
         Assert.False(item.Checked);
         Assert.False(item.CheckOnClick);
         Assert.Equal(CheckState.Unchecked, item.CheckState);
+        Assert.False(item.Break);
         Assert.True(item.Enabled);
         Assert.NotNull(item.Events);
         Assert.Same(item.Events, item.Events);
@@ -96,6 +97,25 @@ public class ToolStripMenuItemTests
         Assert.Null(item.ToolTipText);
         Assert.False(item.Visible);
         Assert.Equal(32, item.Width);
+    }
+
+    [WinFormsTheory]
+    [BoolData]
+    public void ToolStripMenuItem_Break_Set_GetReturnsExpected(bool value)
+    {
+        using SubToolStripMenuItem item = new()
+        {
+            Break = value
+        };
+        Assert.Equal(value, item.Break);
+
+        // Set same.
+        item.Break = value;
+        Assert.Equal(value, item.Break);
+
+        // Set different.
+        item.Break = !value;
+        Assert.Equal(!value, item.Break);
     }
 
     public static IEnumerable<object[]> GetNativeMenuItemImage_TestData()

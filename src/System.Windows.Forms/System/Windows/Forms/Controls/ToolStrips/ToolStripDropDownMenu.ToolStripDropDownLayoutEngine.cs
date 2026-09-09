@@ -17,7 +17,13 @@ public partial class ToolStripDropDownMenu
             Size preferredSize = base.GetPreferredSize(container, proposedConstraints);
             if (container is ToolStripDropDownMenu dropDownMenu)
             {
-                preferredSize.Width = dropDownMenu.MaxItemSize.Width - dropDownMenu.PaddingToTrim;
+                // When one or more items request a column break (ToolStripMenuItem.Break), the base FlowLayout
+                // preferred width already accounts for the additional columns (each column is
+                // dropDownMenu.MaxItemSize.Width wide). Trim it by the same padding amount that the
+                // single-column case applies instead of collapsing back down to a single column's width.
+                preferredSize.Width = Math.Max(
+                    preferredSize.Width - dropDownMenu.PaddingToTrim,
+                    dropDownMenu.MaxItemSize.Width - dropDownMenu.PaddingToTrim);
             }
 
             return preferredSize;

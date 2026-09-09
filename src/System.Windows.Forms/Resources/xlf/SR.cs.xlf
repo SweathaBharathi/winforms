@@ -10534,6 +10534,11 @@ Trasování zásobníku, kde došlo k neplatné operaci:
         <target state="translated">Vyvolá se v případě, že dojde ke změně stylu rozložení ovládacího prvku ToolStrip.</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripMenuItemBreakDescr">
+        <source>Indicates whether this item starts a new column when displayed in a drop-down menu.</source>
+        <target state="new">Indicates whether this item starts a new column when displayed in a drop-down menu.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripMenuItemShortcutKeyDisplayStringDescr">
         <source>The string to be displayed as the shortcut key.</source>
         <target state="translated">Řetězec, který se má zobrazit jako klávesová zkratka</target>

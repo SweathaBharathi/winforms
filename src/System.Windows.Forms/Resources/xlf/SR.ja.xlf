@@ -10534,6 +10534,11 @@ Stack trace where the illegal operation occurred was:
         <target state="translated">ToolStrip のレイアウト スタイルが変更したときに発生します。</target>
         <note />
       </trans-unit>
+      <trans-unit id="ToolStripMenuItemBreakDescr">
+        <source>Indicates whether this item starts a new column when displayed in a drop-down menu.</source>
+        <target state="new">Indicates whether this item starts a new column when displayed in a drop-down menu.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ToolStripMenuItemShortcutKeyDisplayStringDescr">
         <source>The string to be displayed as the shortcut key.</source>
         <target state="translated">ショートカット キーとして表示される文字列です。</target>

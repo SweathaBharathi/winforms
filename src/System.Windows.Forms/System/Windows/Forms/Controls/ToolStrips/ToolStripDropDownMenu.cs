@@ -542,11 +542,63 @@ public partial class ToolStripDropDownMenu : ToolStripDropDown
             // If we do, then we'll adjust the positions to match.
             RequiresScrollButtons = false;
             CalculateInternalLayoutMetrics();
+            UpdateWrapContentsForColumnBreaks();
             base.OnLayout(e);
             if (!RequiresScrollButtons)
             {
                 ResetScrollPosition();
             }
+        }
+    }
+
+    /// <summary>
+    ///  A <see cref="ToolStripMenuItem"/> with <see cref="ToolStripMenuItem.Break"/> set to <see langword="true"/>
+    ///  becomes the first item of a new column when laid out (mirroring the native
+    ///  <c>MFT_MENUBREAK</c>/<c>MFT_MENUBARBREAK</c> menu item flags). The underlying <see cref="FlowLayout"/>
+    ///  engine, however, expresses breaks the other way around: setting its FlowBreak flag on an item means the
+    ///  break happens immediately *after* that item, i.e. it is the *next* item that starts the new column. So
+    ///  we translate here: for every item that requests <see cref="ToolStripMenuItem.Break"/>, we set the
+    ///  FlowLayout FlowBreak flag on the item immediately preceding it in display order. We only enable wrapping
+    ///  of the underlying flow layout when at least one displayed item requests a break, so menus that don't use
+    ///  this feature keep their existing single-column layout behavior.
+    /// </summary>
+    private void UpdateWrapContentsForColumnBreaks()
+    {
+        bool hasColumnBreak = false;
+        ToolStripItem? previousAvailableItem = null;
+
+        for (int i = 0; i < Items.Count; i++)
+        {
+            ToolStripItem item = Items[i];
+            if (!item.Available)
+            {
+                continue;
+            }
+
+            if (previousAvailableItem is not null)
+            {
+                bool startsNewColumn = item is ToolStripMenuItem { Break: true };
+                if (CommonProperties.GetFlowBreak(previousAvailableItem) != startsNewColumn)
+                {
+                    CommonProperties.SetFlowBreak(previousAvailableItem, startsNewColumn);
+                }
+
+                hasColumnBreak |= startsNewColumn;
+            }
+
+            previousAvailableItem = item;
+        }
+
+        // The last displayed item can never carry a break (there is nothing after it to move to a new
+        // column), so make sure it doesn't retain a stale FlowBreak flag from a previous layout pass.
+        if (previousAvailableItem is not null && CommonProperties.GetFlowBreak(previousAvailableItem))
+        {
+            CommonProperties.SetFlowBreak(previousAvailableItem, false);
+        }
+
+        if (FlowLayout.GetWrapContents(this) != hasColumnBreak)
+        {
+            FlowLayout.SetWrapContents(this, hasColumnBreak);
         }
     }
 
