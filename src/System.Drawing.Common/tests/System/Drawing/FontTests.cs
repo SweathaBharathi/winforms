@@ -405,6 +405,22 @@ public class FontTests
     }
 
     [Fact]
+    public void Clone_NonExistentFontFamily_EqualsOriginal()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/8821.
+        // When the requested family name does not exist, GDI+ substitutes a fallback font. Font.Clone()
+        // must still produce a font that is considered an "exact copy", i.e. Equals() must return true,
+        // even though the fallback family is resolved via a different native code path than the original.
+        using Font font = new("ThisFontFamilyDoesNotExist12345", 10);
+        using Font clone = Assert.IsType<Font>(font.Clone());
+
+        Assert.NotSame(font, clone);
+        Assert.Equal(font.FontFamily.Name, clone.FontFamily.Name);
+        Assert.True(font.Equals(clone));
+        Assert.True(clone.Equals(font));
+    }
+
+    [Fact]
     public void Clone_DisposedFont_ThrowsArgumentException()
     {
         using FontFamily family = FontFamily.GenericSansSerif;
@@ -420,7 +436,10 @@ public class FontTests
         Font font = new(family, 10, FontStyle.Bold, GraphicsUnit.Inch, 10, gdiVerticalFont: true);
 
         yield return new object[] { font, font, true };
-        yield return new object[] { font.Clone(), new Font(family, 10, FontStyle.Bold, GraphicsUnit.Inch, 10, gdiVerticalFont: true), false };
+        // Same family/size/style/etc. as the original: this is expected to be an exact match (see
+        // https://github.com/dotnet/winforms/issues/8821 - FontFamily.Equals() must compare by name since
+        // GDI+ does not guarantee the same native pointer for logically identical families).
+        yield return new object[] { font.Clone(), new Font(family, 10, FontStyle.Bold, GraphicsUnit.Inch, 10, gdiVerticalFont: true), true };
         yield return new object[] { font.Clone(), new Font(family, 9, FontStyle.Bold, GraphicsUnit.Inch, 10, gdiVerticalFont: true), false };
         yield return new object[] { font.Clone(), new Font(family, 10, FontStyle.Italic, GraphicsUnit.Millimeter, 10, gdiVerticalFont: true), false };
         yield return new object[] { font.Clone(), new Font(family, 10, FontStyle.Bold, GraphicsUnit.Inch, 9, gdiVerticalFont: true), false };

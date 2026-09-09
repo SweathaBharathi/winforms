@@ -177,8 +177,25 @@ public sealed unsafe class FontFamily : MarshalByRefObject, IDisposable, IPointe
             return false;
         }
 
-        // GDI+ font families are instances in their font collection, so we can compare the pointers.
-        return otherFamily.NativeFamily == NativeFamily;
+        // GDI+ font families are usually singleton instances in their font collection, so comparing the
+        // native pointers is a fast path that covers the overwhelming majority of cases. However, GDI+ can
+        // hand back different native pointers for what is logically the same family (for example, when the
+        // requested family name doesn't exist and GDI+ substitutes a fallback font - the family retrieved via
+        // GdipGetFamily() on the resulting font is not the same pointer as the sentinel generic family used
+        // while resolving the fallback). Fall back to comparing by name so that families are considered equal
+        // whenever they refer to the same font family, matching the contract with GetHashCode().
+        if (otherFamily.NativeFamily == NativeFamily)
+        {
+            return true;
+        }
+
+        Span<char> name = stackalloc char[(int)PInvokeCore.LF_FACESIZE];
+        GetName(name, NeutralLanguage);
+
+        Span<char> otherName = stackalloc char[(int)PInvokeCore.LF_FACESIZE];
+        otherFamily.GetName(otherName, NeutralLanguage);
+
+        return name.SliceAtFirstNull().SequenceEqual(otherName.SliceAtFirstNull());
     }
 
     /// <summary>
