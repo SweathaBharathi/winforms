@@ -139,9 +139,10 @@ internal sealed class AnimatedCheckGlyphRenderer : AnimatedControlRenderer
                 graphics.FillPath(brush, path);
             }
 
-            int borderThickness = Math.Max(
-                1,
-                Control.LogicalToDeviceUnits(flatStyle == FlatStyle.Popup ? 2 : 1));
+            // Use the same border thickness for every flat style. Previously, FlatStyle.Popup drew a border
+            // twice as thick as the other styles, which made the glyph look overly bold and blurry compared
+            // to FlatStyle.Standard and FlatStyle.Flat (see https://github.com/dotnet/winforms/issues/14757).
+            int borderThickness = Math.Max(1, Control.LogicalToDeviceUnits(1));
 
             using (var pen = new Pen(borderColor, borderThickness) { Alignment = PenAlignment.Inset })
             {

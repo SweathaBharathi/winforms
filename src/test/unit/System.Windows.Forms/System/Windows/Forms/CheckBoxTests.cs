@@ -788,6 +788,64 @@ public class CheckBoxTests : AbstractButtonBaseTests
         Assert.False(renderer.IsAccentColorCached);
     }
 
+    [WinFormsFact]
+    public void CheckBox_ModernGlyph_PopupBorderThicknessMatchesStandard()
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/14757:
+        // FlatStyle.Popup used to draw the glyph border twice as thick as FlatStyle.Standard,
+        // making it look overly bold and blurry. Both styles should use the same border thickness.
+        if (SystemInformation.HighContrast)
+        {
+            return;
+        }
+
+        using CheckBox box = new() { VisualStylesMode = VisualStylesMode.Net11 };
+        Rendering.CheckBox.AnimatedCheckGlyphRenderer renderer = box.CheckGlyphRenderer;
+        renderer.NotifyCheckStateChanged(CheckState.Unchecked);
+
+        Rectangle bounds = new(4, 4, 16, 16);
+
+        int standardThickness = MeasureTopBorderThickness(renderer, FlatStyle.Standard, bounds);
+        int popupThickness = MeasureTopBorderThickness(renderer, FlatStyle.Popup, bounds);
+
+        Assert.NotEqual(0, standardThickness);
+        Assert.Equal(standardThickness, popupThickness);
+    }
+
+    private static int MeasureTopBorderThickness(
+        Rendering.CheckBox.AnimatedCheckGlyphRenderer renderer,
+        FlatStyle flatStyle,
+        Rectangle bounds)
+    {
+        using Bitmap bitmap = new(24, 24);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+
+        renderer.DrawGlyph(
+            graphics,
+            bounds,
+            flatStyle,
+            enabled: true,
+            hovered: false,
+            focused: false,
+            customOnColor: null,
+            customBorderColor: null);
+
+        int centerX = bounds.X + (bounds.Width / 2);
+        Color borderColor = bitmap.GetPixel(centerX, bounds.Y);
+        int thickness = 0;
+        for (int y = bounds.Y; y < bounds.Bottom; y++)
+        {
+            if (bitmap.GetPixel(centerX, y).ToArgb() != borderColor.ToArgb())
+            {
+                break;
+            }
+
+            thickness++;
+        }
+
+        return thickness;
+    }
+
     [Fact]
     public void AnimatedControlRenderer_InteractionShade_BlendsEightPercentTowardsContrast()
     {

@@ -767,6 +767,51 @@ public class ButtonVisualStylesTests
         Assert.InRange(cornerLuminance, parentLuminance - 3, 255);
     }
 
+    [WinFormsTheory]
+    [InlineData(FlatStyle.Standard)]
+    [InlineData(FlatStyle.Popup)]
+    public void ModernButtonDarkModeRenderer_Border_IsCrispSinglePixelLine(FlatStyle flatStyle)
+    {
+        // Regression test for https://github.com/dotnet/winforms/issues/14757: the light-theme border
+        // was filled without PixelOffsetMode.HighQuality, which spread the 1-pixel border across two
+        // partially-transparent rows instead of a single crisp row, making the button border look blurry.
+        // FlatStyle.Standard and FlatStyle.Popup both use ModernButtonDarkModeRenderer under Net11 and
+        // must render an identical, crisp border.
+        using Button button = new() { FlatStyle = flatStyle, VisualStylesMode = VisualStylesMode.Net11 };
+        ModernButtonDarkModeRenderer renderer = new()
+        {
+            DeviceDpi = 96,
+            FlatAppearance = button.FlatAppearance
+        };
+
+        Rectangle bounds = new(0, 0, 120, 40);
+        Color bodyColor = Color.FromArgb(0xFB, 0xFB, 0xFB);
+
+        using Bitmap bitmap = new(bounds.Width, bounds.Height);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        graphics.Clear(Color.Black);
+
+        renderer.RenderButton(
+            graphics,
+            button,
+            bounds,
+            flatStyle,
+            VisualStyles.PushButtonState.Normal,
+            isDefault: false,
+            focused: false,
+            showFocusCues: false,
+            parentBackgroundColor: Color.Black,
+            backColor: bodyColor,
+            paintContent: _ => { });
+
+        int centerX = bounds.Width / 2;
+        Color borderRow = bitmap.GetPixel(centerX, 0);
+        Color nextRow = bitmap.GetPixel(centerX, 1);
+
+        Assert.Equal(Color.FromArgb(0xD0, 0xD0, 0xD0).ToArgb(), borderRow.ToArgb());
+        Assert.Equal(bodyColor.ToArgb(), nextRow.ToArgb());
+    }
+
     [WinFormsFact]
     public void ButtonBackColorAnimator_InterpolatesReversesAndStops()
     {

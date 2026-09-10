@@ -91,6 +91,7 @@ internal sealed class ModernButtonDarkModeRenderer : ButtonDarkModeRendererBase
         try
         {
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
             RectangleF pathBounds = GetPathBounds(bounds);
             float radius = GetCornerRadius(focused, isDefault);
@@ -136,6 +137,7 @@ internal sealed class ModernButtonDarkModeRenderer : ButtonDarkModeRendererBase
         try
         {
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
             if (FocusRingThickness == 0)
             {
