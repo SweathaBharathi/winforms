@@ -5790,6 +5790,11 @@ Do you want to replace it?</source>
         <target state="translated">테이블의 행 개수입니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="GroupBoxBorderStyleDescr">
+        <source>Indicates whether the group box should have a border.</source>
+        <target state="new">Indicates whether the group box should have a border.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="HScrollBarDefaultAccessibleName">
         <source>Horizontal</source>
         <target state="translated">가로</target>

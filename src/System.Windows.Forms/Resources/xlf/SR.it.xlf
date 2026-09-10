@@ -5790,6 +5790,11 @@ Sostituirlo?</target>
         <target state="translated">Il numero di righe nella tabella.</target>
         <note />
       </trans-unit>
+      <trans-unit id="GroupBoxBorderStyleDescr">
+        <source>Indicates whether the group box should have a border.</source>
+        <target state="new">Indicates whether the group box should have a border.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="HScrollBarDefaultAccessibleName">
         <source>Horizontal</source>
         <target state="translated">Orizzontale</target>

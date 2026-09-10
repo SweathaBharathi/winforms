@@ -1515,6 +1515,47 @@ public class GroupBoxTests
         Assert.False(control.IsHandleCreated);
     }
 
+    [WinFormsFact]
+    public void GroupBox_BorderStyle_Default_IsFixed3D()
+    {
+        using GroupBox control = new();
+        Assert.Equal(BorderStyle.Fixed3D, control.BorderStyle);
+    }
+
+    [WinFormsTheory]
+    [InlineData(BorderStyle.None, true)]
+    [InlineData(BorderStyle.FixedSingle, false)]
+    [InlineData(BorderStyle.Fixed3D, false)]
+    public void GroupBox_BorderStyle_Set_GetReturnsExpected(BorderStyle value, bool ownerDraw)
+    {
+        // FlatStyle.System is native and would otherwise draw its own border, so BorderStyle.None
+        // must force the control to become owner-drawn to be able to suppress that border.
+        using SubGroupBox control = new()
+        {
+            FlatStyle = FlatStyle.System
+        };
+
+        control.BorderStyle = value;
+
+        Assert.Equal(value, control.BorderStyle);
+        Assert.Equal(ownerDraw, control.GetStyle(ControlStyles.UserPaint));
+        Assert.False(control.IsHandleCreated);
+
+        // Set same.
+        control.BorderStyle = value;
+        Assert.Equal(value, control.BorderStyle);
+        Assert.Equal(ownerDraw, control.GetStyle(ControlStyles.UserPaint));
+        Assert.False(control.IsHandleCreated);
+    }
+
+    [WinFormsTheory]
+    [InvalidEnumData<BorderStyle>]
+    public void GroupBox_BorderStyle_SetInvalid_ThrowsInvalidEnumArgumentException(BorderStyle value)
+    {
+        using GroupBox control = new();
+        Assert.Throws<InvalidEnumArgumentException>("value", () => control.BorderStyle = value);
+    }
+
     [WinFormsTheory]
     [InlineData(FlatStyle.Flat, FlatStyle.Flat, false, true, true)]
     [InlineData(FlatStyle.Flat, FlatStyle.Popup, true, true, true)]

@@ -310,7 +310,10 @@ public partial class GroupBox
             PaintModernBackgroundImage(e, ClientRectangle);
         }
 
-        DrawRoundedFrame(e.Graphics, frameBounds, borderColor);
+        if (_borderStyle != BorderStyle.None)
+        {
+            DrawRoundedFrame(e.Graphics, frameBounds, borderColor);
+        }
 
         Rectangle captionBackground = GetFlatCaptionBackgroundBounds(
             e.Graphics,
@@ -397,7 +400,10 @@ public partial class GroupBox
 
         using var borderPen = borderColor.GetCachedPenScope(
             GetModernBorderThickness());
-        e.Graphics.DrawPath(borderPen, path);
+        if (_borderStyle != BorderStyle.None)
+        {
+            e.Graphics.DrawPath(borderPen, path);
+        }
 
         // The rounded frame is clipped with a non-antialiased region; blend the resulting corner
         // artifacts into the parent by tracing the parent color just outside the border.

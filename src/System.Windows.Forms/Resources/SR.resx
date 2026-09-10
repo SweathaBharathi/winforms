@@ -3376,6 +3376,9 @@ Do you want to replace it?</value>
   <data name="GridPanelRowStylesDescr" xml:space="preserve">
     <value>The row styles of the table.</value>
   </data>
+  <data name="GroupBoxBorderStyleDescr" xml:space="preserve">
+    <value>Indicates whether the group box should have a border.</value>
+  </data>
   <data name="HandleAlreadyExists" xml:space="preserve">
     <value>Window handle already exists.</value>
   </data>

@@ -21,6 +21,7 @@ public partial class GroupBox : Control
     private int _fontHeight = -1;
     private Font? _cachedFont;
     private FlatStyle _flatStyle = FlatStyle.Standard;
+    private BorderStyle _borderStyle = BorderStyle.Fixed3D;
 
     /// <summary>
     ///  Initializes a new instance of the <see cref="GroupBox"/> class.
@@ -234,7 +235,58 @@ public partial class GroupBox : Control
         }
     }
 
-    private bool OwnerDraw => FlatStyle != FlatStyle.System;
+    private bool OwnerDraw => FlatStyle != FlatStyle.System || _borderStyle == BorderStyle.None;
+
+    /// <summary>
+    ///  Gets or sets the border style of the group box.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Setting this property to <see cref="BorderStyle.None"/> hides the group box border in every
+    ///   <see cref="FlatStyle"/> other than <see cref="FlatStyle.Standard"/> when using the modern (.NET
+    ///   11-or-later) renderer, which never draws a border. The group box always continues to draw its caption.
+    ///  </para>
+    /// </remarks>
+    [SRCategory(nameof(SR.CatAppearance))]
+    [DefaultValue(BorderStyle.Fixed3D)]
+    [SRDescription(nameof(SR.GroupBoxBorderStyleDescr))]
+    public BorderStyle BorderStyle
+    {
+        get => _borderStyle;
+        set
+        {
+            SourceGenerated.EnumValidator.Validate(value);
+
+            if (_borderStyle == value)
+            {
+                return;
+            }
+
+            bool originalOwnerDraw = OwnerDraw;
+            _borderStyle = value;
+
+            // In CreateParams, we pick our class style based on OwnerDraw. If this has changed
+            // (i.e. a native BS_GROUPBOX control needs to become owner-drawn to hide its border, or
+            // vice versa), we need to recreate the handle.
+            bool needRecreate = OwnerDraw != originalOwnerDraw;
+
+            SetStyle(ControlStyles.ContainerControl, true);
+
+            SetStyle(ControlStyles.SupportsTransparentBackColor |
+                     ControlStyles.UserPaint |
+                     ControlStyles.ResizeRedraw |
+                     ControlStyles.UserMouse, OwnerDraw);
+
+            if (needRecreate)
+            {
+                RecreateHandle();
+            }
+            else
+            {
+                Refresh();
+            }
+        }
+    }
 
     /// <summary>
     ///  Gets or sets a value indicating whether the user may press the TAB key to give the focus to the
@@ -430,7 +482,7 @@ public partial class GroupBox : Control
         // what we do for the non-themed case, so if someone is using the groupbox as a separator, their app will
         // look weird in .NET Framework 2.0. We render the old way in these cases.
 
-        if (!Application.RenderWithVisualStyles || Width < 10 || Height < 10)
+        if (_borderStyle == BorderStyle.None || !Application.RenderWithVisualStyles || Width < 10 || Height < 10)
         {
             DrawGroupBox(e);
         }
@@ -582,6 +634,12 @@ public partial class GroupBox : Control
 
         // Math.Min to assure we paint at least a small line.
         int textRight = Math.Min(textLeft + textSize.Width, Width - 6);
+
+        // A BorderStyle of None means the group box only draws its caption text, no border lines.
+        if (_borderStyle == BorderStyle.None)
+        {
+            return;
+        }
 
         int boxTop = FontHeight / 2;
 
