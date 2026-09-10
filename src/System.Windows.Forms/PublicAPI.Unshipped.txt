@@ -135,3 +135,4 @@ System.Windows.Forms.KioskModeManager.ToggleFullScreenKeys.get -> System.Windows
 System.Windows.Forms.KioskModeManager.ToggleFullScreenKeys.set -> void
 System.Windows.Forms.KioskModeManager.TopMostInFullScreen.get -> bool
 System.Windows.Forms.KioskModeManager.TopMostInFullScreen.set -> void
+virtual System.Windows.Forms.DataGridViewTextBoxCell.CellPaint(System.Drawing.Graphics! graphics, System.Drawing.Rectangle valBounds, string! formattedString, System.Windows.Forms.DataGridViewCellStyle! cellStyle, bool cellSelected, System.Windows.Forms.TextFormatFlags flags) -> void

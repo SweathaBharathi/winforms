@@ -628,6 +628,43 @@ public partial class DataGridViewTextBoxCell : DataGridViewCell
             paint: true);
     }
 
+    /// <summary>
+    ///  Paints the formatted text of the cell.
+    /// </summary>
+    /// <param name="graphics">The <see cref="Graphics"/> used to paint the cell text.</param>
+    /// <param name="valBounds">The bounds, within the cell, in which the text is drawn.</param>
+    /// <param name="formattedString">The formatted string value to draw.</param>
+    /// <param name="cellStyle">The <see cref="DataGridViewCellStyle"/> in effect for the cell.</param>
+    /// <param name="cellSelected"><see langword="true"/> if the cell is selected; otherwise, <see langword="false"/>.</param>
+    /// <param name="flags">The <see cref="TextFormatFlags"/> used to format the text.</param>
+    /// <remarks>
+    ///  <para>
+    ///   Override this method to customize how the cell's text is rendered, for example to apply
+    ///   a different <see cref="TextFormatFlags"/> value or draw the text using a different mechanism,
+    ///   without having to reimplement the rest of the cell's painting logic.
+    ///  </para>
+    /// </remarks>
+    protected virtual void CellPaint(
+        Graphics graphics,
+        Rectangle valBounds,
+        string formattedString,
+        DataGridViewCellStyle cellStyle,
+        bool cellSelected,
+        TextFormatFlags flags)
+    {
+        ArgumentNullException.ThrowIfNull(graphics);
+        ArgumentNullException.ThrowIfNull(formattedString);
+        ArgumentNullException.ThrowIfNull(cellStyle);
+
+        TextRenderer.DrawText(
+            graphics,
+            formattedString,
+            cellStyle.Font,
+            valBounds,
+            cellSelected ? cellStyle.SelectionForeColor : cellStyle.ForeColor,
+            flags);
+    }
+
     // PaintPrivate is used in three places that need to duplicate the paint code:
     // 1. DataGridViewCell::Paint method
     // 2. DataGridViewCell::GetContentBounds
@@ -742,11 +779,12 @@ public partial class DataGridViewTextBoxCell : DataGridViewCell
                             flags |= TextFormatFlags.EndEllipsis;
                         }
 
-                        TextRenderer.DrawText(graphics,
-                            formattedString,
-                            cellStyle.Font,
+                        CellPaint(
+                            graphics,
                             valBounds,
-                            cellSelected ? cellStyle.SelectionForeColor : cellStyle.ForeColor,
+                            formattedString,
+                            cellStyle,
+                            cellSelected,
                             flags);
                     }
                 }
