@@ -74,6 +74,13 @@ public partial class TreeView : Control
     private const int TREEVIEWSTATE_ignoreSelects = 0x00010000;
     private const int TREEVIEWSTATE_doubleBufferedPropertySet = 0x00020000;
 
+    // Tracks whether the last explicit SelectedNode assignment cleared the selection (set to null).
+    // The underlying comctl32 TreeView control does not truly forget the previously selected item when
+    // deselected this way: it silently restores that item as the selection when the control regains focus
+    // (e.g. via WM_SETFOCUS), raising a spurious TVN_SELCHANGED/AfterSelect for a selection change the
+    // application never made. This flag lets us recognize and suppress that restoration.
+    private const int TREEVIEWSTATE_selectedNodeExplicitlyCleared = 0x00040000;
+
     // PERF: take all the bools and put them into a state variable
     private Collections.Specialized.BitVector32 _treeViewState; // see TREEVIEWSTATE_ constants above
 
@@ -1113,6 +1120,15 @@ public partial class TreeView : Control
                 // to inform the handle that the selected node has been added to the TreeView.
                 Debug.Assert(_selectedNode is null || _selectedNode.TreeView != this, "handle is created, but we're still caching selectedNode");
 
+                // Only treat this as an explicit deselection if there actually was a selection to clear.
+                // Otherwise (e.g. the very first assignment made while restoring cached state in
+                // OnHandleCreated, where nothing has ever been selected) there is nothing for the native
+                // control to spuriously "restore" later, so we must not suppress its first real selection.
+                bool isExplicitClear = value is null && SelectedNode is not null;
+
+                // Set this before sending TVM_SELECTITEM: the message synchronously reflects back into
+                // TvnSelected, which relies on this flag already reflecting the newly requested state.
+                _treeViewState[TREEVIEWSTATE_selectedNodeExplicitlyCleared] = isExplicitClear;
                 nint hnode = (value is null ? 0 : value.Handle);
                 PInvokeCore.SendMessage(this, PInvoke.TVM_SELECTITEM, (WPARAM)PInvoke.TVGN_CARET, (LPARAM)hnode);
                 _selectedNode = null;
@@ -1120,6 +1136,7 @@ public partial class TreeView : Control
             else
             {
                 _selectedNode = value;
+                _treeViewState[TREEVIEWSTATE_selectedNodeExplicitlyCleared] = false;
             }
         }
     }
@@ -2546,6 +2563,22 @@ public partial class TreeView : Control
                     action = TreeViewAction.ByMouse;
                     break;
             }
+
+            // The comctl32 TreeView control does not forget the previously selected item when it is
+            // deselected via SelectedNode = null: it silently restores that item as the selection when the
+            // control subsequently regains focus (e.g. WM_SETFOCUS), raising this native notification with a
+            // non-null item even though the application never re-selected anything (action is neither mouse
+            // nor keyboard driven in that case). When we know the selection was explicitly cleared, undo that
+            // native restoration and skip raising AfterSelect for it, so the control's observable selection
+            // state matches what the application asked for.
+            if (action == TreeViewAction.Unknown && _treeViewState[TREEVIEWSTATE_selectedNodeExplicitlyCleared])
+            {
+                PInvokeCore.SendMessage(this, PInvoke.TVM_SELECTITEM, (WPARAM)PInvoke.TVGN_CARET, (LPARAM)0);
+                return;
+            }
+
+            // A node is genuinely selected now, so the previously cleared selection (if any) no longer applies.
+            _treeViewState[TREEVIEWSTATE_selectedNodeExplicitlyCleared] = false;
 
             OnAfterSelect(new TreeViewEventArgs(node, action));
         }

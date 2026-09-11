@@ -6977,6 +6977,66 @@ public class TreeViewTests
         Assert.Empty(treeView.Nodes);
     }
 
+    [WinFormsFact]
+    public void TreeView_SelectedNode_SetNull_DoesNotRaiseAfterSelectWhenHandleRegainsFocus()
+    {
+        // Regression test: the underlying comctl32 TreeView control silently restores the previously
+        // selected item as its native selection when the control regains focus (WM_SETFOCUS), even after
+        // SelectedNode has been explicitly set to null. That used to raise a spurious AfterSelect event
+        // for a selection change the application never made. See https://stackoverflow.com/q/79952160.
+        using TreeView treeView = new();
+        treeView.CreateControl();
+        treeView.Nodes.AddRange([new("Test 1"), new("Test 2")]);
+
+        int afterSelectCallCount = 0;
+        TreeNode lastSelectedNode = null;
+        treeView.AfterSelect += (sender, e) =>
+        {
+            afterSelectCallCount++;
+            lastSelectedNode = e.Node;
+        };
+
+        treeView.SelectedNode = treeView.Nodes[0];
+        Assert.Equal(1, afterSelectCallCount);
+
+        treeView.SelectedNode = null;
+        Assert.Null(treeView.SelectedNode);
+        Assert.Equal(1, afterSelectCallCount);
+
+        // Simulate the control regaining focus, which is what triggers comctl32 to restore the selection.
+        PInvokeCore.SendMessage(treeView, PInvokeCore.WM_SETFOCUS);
+
+        Assert.Null(treeView.SelectedNode);
+        Assert.Equal(1, afterSelectCallCount);
+        Assert.Equal(treeView.Nodes[0], lastSelectedNode);
+    }
+
+    [WinFormsFact]
+    public void TreeView_SelectedNode_NeverSet_HandleRegainsFocus_DoesNotSuppressRealSelection()
+    {
+        // Regression test: fixing the spurious-restoration issue above must not accidentally suppress a
+        // real, legitimate selection change when SelectedNode was never explicitly set to null (e.g. the
+        // handle just got created and its cached selected node is null because nothing was ever selected).
+        // In that case, comctl32's default focus handling selects an item (typically the first node) and
+        // this must raise AfterSelect normally, exactly like before this fix.
+        using TreeView treeView = new();
+        treeView.CreateControl();
+        treeView.Nodes.AddRange([new("Test 1"), new("Test 2")]);
+
+        int afterSelectCallCount = 0;
+        treeView.AfterSelect += (sender, e) => afterSelectCallCount++;
+
+        // Simulate the control gaining focus without ever having assigned SelectedNode.
+        PInvokeCore.SendMessage(treeView, PInvokeCore.WM_SETFOCUS);
+        Assert.Equal(1, afterSelectCallCount);
+        Assert.Equal(treeView.Nodes[0], treeView.SelectedNode);
+
+        // A genuine selection afterward must still raise AfterSelect and be reflected by SelectedNode.
+        treeView.SelectedNode = treeView.Nodes[1];
+        Assert.Equal(2, afterSelectCallCount);
+        Assert.Equal(treeView.Nodes[1], treeView.SelectedNode);
+    }
+
     [WinFormsTheory]
     [InlineData(true)]
     [InlineData(false)]
