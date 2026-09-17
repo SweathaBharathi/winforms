@@ -48,6 +48,14 @@ static System.Windows.Forms.Application.DefaultFormRevealMode.get -> System.Wind
 static System.Windows.Forms.Application.IsFormRevealDeferred.get -> bool
 static System.Windows.Forms.Application.SetDefaultFormRevealMode(System.Windows.Forms.FormRevealMode mode) -> void
 virtual System.Windows.Forms.Control.BeginSuspendPaintingCore() -> void
+System.Windows.Forms.ControlDrawingExtensions
+static System.Windows.Forms.ControlDrawingExtensions.LockDrawing(this System.Windows.Forms.Control! target) -> void
+static System.Windows.Forms.ControlDrawingExtensions.UnlockDrawing(this System.Windows.Forms.Control! target) -> void
+static System.Windows.Forms.ControlDrawingExtensions.UseDrawingLock(this System.Windows.Forms.Control! target) -> System.Windows.Forms.DrawingLock
+System.Windows.Forms.DrawingLock
+System.Windows.Forms.DrawingLock.DrawingLock() -> void
+System.Windows.Forms.DrawingLock.DrawingLock(System.Windows.Forms.Control! target) -> void
+System.Windows.Forms.DrawingLock.Dispose() -> void
 virtual System.Windows.Forms.Control.EndSuspendPaintingCore() -> void
 virtual System.Windows.Forms.Form.FormRevealMode.get -> System.Windows.Forms.FormRevealMode
 virtual System.Windows.Forms.Form.FormRevealMode.set -> void

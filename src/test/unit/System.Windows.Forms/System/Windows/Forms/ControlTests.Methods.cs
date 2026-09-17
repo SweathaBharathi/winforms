@@ -448,6 +448,32 @@ public partial class ControlTests
     }
 #endif
 
+    [WinFormsFact]
+    public void Control_UseDrawingLock_ScopeDisposes_LocksAndUnlocksDrawing()
+    {
+        using SubControl control = new();
+        control.CreateControl();
+
+        using (control.UseDrawingLock())
+        {
+            Assert.True(control.IsHandleCreated);
+        }
+
+        // After disposing the scope, drawing is unlocked and the control remains usable.
+        Assert.True(control.IsHandleCreated);
+        Assert.False(control.IsDisposed);
+    }
+
+    [WinFormsFact]
+    public void Control_LockDrawing_NullTarget_ThrowsArgumentNullException()
+    {
+        Control control = null;
+
+        Assert.Throws<ArgumentNullException>(() => control.LockDrawing());
+        Assert.Throws<ArgumentNullException>(() => control.UnlockDrawing());
+        Assert.Throws<ArgumentNullException>(() => control.UseDrawingLock());
+    }
+
     public static IEnumerable<object[]> AccessibilityNotifyClients_AccessibleEvents_Int_TestData()
     {
         yield return new object[] { AccessibleEvents.DescriptionChange, int.MinValue };
