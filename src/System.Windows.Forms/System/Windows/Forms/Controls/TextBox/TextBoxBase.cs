@@ -47,12 +47,19 @@ public abstract partial class TextBoxBase : Control
     private static readonly object s_modifiedChangedEvent = new();
     private static readonly object s_multilineChangedEvent = new();
     private static readonly object s_readOnlyChangedEvent = new();
+    private static readonly object s_idleTextChangedEvent = new();
+
+    private const int DefaultIdleTextDelayTime = 500;
 
     /// <summary>
     ///  The current border for this edit control.
     /// </summary>
     private BorderStyle _borderStyle = BorderStyle.Fixed3D;
     private AnimatedFocusIndicatorRenderer? _focusIndicatorRenderer;
+
+    private Timer? _idleTextTimer;
+    private string _idleText = string.Empty;
+    private int _idleTextDelayTime = DefaultIdleTextDelayTime;
 
     private const OBJECT_IDENTIFIER HorizontalScrollBarObjectId = (OBJECT_IDENTIFIER)(-6);
     private const OBJECT_IDENTIFIER VerticalScrollBarObjectId = (OBJECT_IDENTIFIER)(-5);
@@ -144,6 +151,95 @@ public abstract partial class TextBoxBase : Control
     {
         add => Events.AddHandler(s_acceptsTabChangedEvent, value);
         remove => Events.RemoveHandler(s_acceptsTabChangedEvent, value);
+    }
+
+    /// <summary>
+    ///  Gets the text of the control as it was the last time the <see cref="Text"/> property
+    ///  remained unchanged for at least <see cref="IdleTextDelayTime"/> milliseconds.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Unlike <see cref="Text"/>, which changes with every keystroke, <see cref="IdleText"/>
+    ///   only updates once the user pauses typing, making it suitable for scenarios such as
+    ///   data binding on <c>PropertyChanged</c> or triggering expensive filtering operations
+    ///   without causing visible lag while the user is still typing.
+    ///  </para>
+    /// </remarks>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    [SRCategory(nameof(SR.CatBehavior))]
+    [SRDescription(nameof(SR.TextBoxIdleTextDescr))]
+    public string IdleText => _idleText;
+
+    /// <summary>
+    ///  Gets or sets the amount of time, in milliseconds, that the <see cref="Text"/> property
+    ///  must remain unchanged before <see cref="IdleText"/> is updated and
+    ///  <see cref="IdleTextChanged"/> is raised.
+    /// </summary>
+    [SRCategory(nameof(SR.CatBehavior))]
+    [DefaultValue(DefaultIdleTextDelayTime)]
+    [SRDescription(nameof(SR.TextBoxIdleTextDelayTimeDescr))]
+    public int IdleTextDelayTime
+    {
+        get => _idleTextDelayTime;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+            _idleTextDelayTime = value;
+            if (_idleTextTimer is not null)
+            {
+                _idleTextTimer.Interval = value;
+            }
+        }
+    }
+
+    [SRCategory(nameof(SR.CatPropertyChanged))]
+    [SRDescription(nameof(SR.TextBoxBaseOnIdleTextChangedDescr))]
+    public event EventHandler? IdleTextChanged
+    {
+        add => Events.AddHandler(s_idleTextChangedEvent, value);
+        remove => Events.RemoveHandler(s_idleTextChangedEvent, value);
+    }
+
+    /// <summary>
+    ///  Raises the <see cref="IdleTextChanged"/> event.
+    /// </summary>
+    /// <param name="e">An <see cref="EventArgs"/> that contains the event data.</param>
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    protected virtual void OnIdleTextChanged(EventArgs e)
+    {
+        if (Events[s_idleTextChangedEvent] is EventHandler eh)
+        {
+            eh(this, e);
+        }
+    }
+
+    /// <summary>
+    ///  (Re)starts the idle detection timer whenever <see cref="Text"/> changes so that
+    ///  <see cref="IdleText"/> is only updated once the user stops typing.
+    /// </summary>
+    private void RestartIdleTextTimer()
+    {
+        if (_idleTextTimer is null)
+        {
+            _idleTextTimer = new Timer { Interval = _idleTextDelayTime };
+            _idleTextTimer.Tick += IdleTextTimer_Tick;
+        }
+
+        _idleTextTimer.Stop();
+        _idleTextTimer.Start();
+    }
+
+    private void IdleTextTimer_Tick(object? sender, EventArgs e)
+    {
+        _idleTextTimer!.Stop();
+
+        if (!string.Equals(_idleText, Text, StringComparison.Ordinal))
+        {
+            _idleText = Text;
+            OnIdleTextChanged(EventArgs.Empty);
+        }
     }
 
     /// <summary>
@@ -1725,6 +1821,17 @@ public abstract partial class TextBoxBase : Control
         base.OnHandleDestroyed(e);
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _idleTextTimer?.Dispose();
+            _idleTextTimer = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
     /// <inheritdoc/>
     protected override void OnVisualStylesModeChanged(EventArgs e)
     {
@@ -1987,6 +2094,8 @@ public abstract partial class TextBoxBase : Control
         // the text changes.
         CommonProperties.xClearPreferredSizeCache(this);
         base.OnTextChanged(e);
+
+        RestartIdleTextTimer();
 
         if (PInvoke.UiaClientsAreListening())
         {

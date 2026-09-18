@@ -34,6 +34,7 @@ public partial class ComboBox : ListControl
     private static readonly object s_dropDownStyleEvent = new();
     private static readonly object s_textUpdateEvent = new();
     private static readonly object s_dropDownClosedEvent = new();
+    private static readonly object s_idleTextChangedEvent = new();
 
     private static readonly int s_propMaxLength = PropertyStore.CreateKey();
     private static readonly int s_propItemHeight = PropertyStore.CreateKey();
@@ -47,6 +48,7 @@ public partial class ComboBox : ListControl
     private const int DefaultSimpleStyleHeight = 150;
     private const int DefaultDropDownHeight = 106;
     private const int AutoCompleteTimeout = 10000000; // 1 second timeout for resetting the MatchingText
+    private const int DefaultIdleTextDelayTime = 500;
     private bool _autoCompleteDroppedDown;
 
     private FlatStyle _flatStyle = FlatStyle.Standard;
@@ -86,6 +88,10 @@ public partial class ComboBox : ListControl
     private bool _mouseOver;
     private bool _suppressNextWindowsPos;
     private bool _canFireLostFocus;
+
+    private Timer? _idleTextTimer;
+    private string _idleText = string.Empty;
+    private int _idleTextDelayTime = DefaultIdleTextDelayTime;
 
     // When the user types a letter and drops the dropdown the ComboBox itself auto-searches the matching item and
     // selects the item in the edit thus changing the windowText. Hence we should Fire the TextChanged event in
@@ -763,6 +769,95 @@ public partial class ComboBox : ListControl
                     PInvokeCore.SendMessage(this, PInvoke.CB_LIMITTEXT, (WPARAM)value);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    ///  Gets the text of the control as it was the last time the <see cref="Text"/> property
+    ///  remained unchanged for at least <see cref="IdleTextDelayTime"/> milliseconds.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   Unlike <see cref="Text"/>, which changes with every keystroke, <see cref="IdleText"/>
+    ///   only updates once the user pauses typing, making it suitable for scenarios such as
+    ///   data binding on <c>PropertyChanged</c> or triggering expensive filtering operations
+    ///   without causing visible lag while the user is still typing.
+    ///  </para>
+    /// </remarks>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    [SRCategory(nameof(SR.CatBehavior))]
+    [SRDescription(nameof(SR.ComboBoxIdleTextDescr))]
+    public string IdleText => _idleText;
+
+    /// <summary>
+    ///  Gets or sets the amount of time, in milliseconds, that the <see cref="Text"/> property
+    ///  must remain unchanged before <see cref="IdleText"/> is updated and
+    ///  <see cref="IdleTextChanged"/> is raised.
+    /// </summary>
+    [SRCategory(nameof(SR.CatBehavior))]
+    [DefaultValue(DefaultIdleTextDelayTime)]
+    [SRDescription(nameof(SR.ComboBoxIdleTextDelayTimeDescr))]
+    public int IdleTextDelayTime
+    {
+        get => _idleTextDelayTime;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+            _idleTextDelayTime = value;
+            if (_idleTextTimer is not null)
+            {
+                _idleTextTimer.Interval = value;
+            }
+        }
+    }
+
+    [SRCategory(nameof(SR.CatPropertyChanged))]
+    [SRDescription(nameof(SR.ComboBoxOnIdleTextChangedDescr))]
+    public event EventHandler? IdleTextChanged
+    {
+        add => Events.AddHandler(s_idleTextChangedEvent, value);
+        remove => Events.RemoveHandler(s_idleTextChangedEvent, value);
+    }
+
+    /// <summary>
+    ///  Raises the <see cref="IdleTextChanged"/> event.
+    /// </summary>
+    /// <param name="e">An <see cref="EventArgs"/> that contains the event data.</param>
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    protected virtual void OnIdleTextChanged(EventArgs e)
+    {
+        if (Events[s_idleTextChangedEvent] is EventHandler eh)
+        {
+            eh(this, e);
+        }
+    }
+
+    /// <summary>
+    ///  (Re)starts the idle detection timer whenever <see cref="Text"/> changes so that
+    ///  <see cref="IdleText"/> is only updated once the user stops typing.
+    /// </summary>
+    private void RestartIdleTextTimer()
+    {
+        if (_idleTextTimer is null)
+        {
+            _idleTextTimer = new Timer { Interval = _idleTextDelayTime };
+            _idleTextTimer.Tick += IdleTextTimer_Tick;
+        }
+
+        _idleTextTimer.Stop();
+        _idleTextTimer.Start();
+    }
+
+    private void IdleTextTimer_Tick(object? sender, EventArgs e)
+    {
+        _idleTextTimer!.Stop();
+
+        if (!string.Equals(_idleText, Text, StringComparison.Ordinal))
+        {
+            _idleText = Text;
+            OnIdleTextChanged(EventArgs.Empty);
         }
     }
 
@@ -1930,6 +2025,9 @@ public partial class ComboBox : ListControl
             _autoCompleteCustomSource?.CollectionChanged -= OnAutoCompleteCustomSourceChanged;
             _stringSource?.ReleaseAutoComplete();
             _stringSource = null;
+
+            _idleTextTimer?.Dispose();
+            _idleTextTimer = null;
         }
 
         base.Dispose(disposing);
@@ -2899,6 +2997,8 @@ public partial class ComboBox : ListControl
         {
             ChildEditAccessibleObject.RaiseAutomationEvent(UIA_EVENT_ID.UIA_Text_TextChangedEventId);
         }
+
+        RestartIdleTextTimer();
     }
 
     [EditorBrowsable(EditorBrowsableState.Advanced)]

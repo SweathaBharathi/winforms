@@ -135,3 +135,14 @@ System.Windows.Forms.KioskModeManager.ToggleFullScreenKeys.get -> System.Windows
 System.Windows.Forms.KioskModeManager.ToggleFullScreenKeys.set -> void
 System.Windows.Forms.KioskModeManager.TopMostInFullScreen.get -> bool
 System.Windows.Forms.KioskModeManager.TopMostInFullScreen.set -> void
+System.Windows.Forms.TextBoxBase.IdleText.get -> string!
+System.Windows.Forms.TextBoxBase.IdleTextDelayTime.get -> int
+System.Windows.Forms.TextBoxBase.IdleTextDelayTime.set -> void
+System.Windows.Forms.TextBoxBase.IdleTextChanged -> System.EventHandler?
+virtual System.Windows.Forms.TextBoxBase.OnIdleTextChanged(System.EventArgs! e) -> void
+override System.Windows.Forms.TextBoxBase.Dispose(bool disposing) -> void
+System.Windows.Forms.ComboBox.IdleText.get -> string!
+System.Windows.Forms.ComboBox.IdleTextDelayTime.get -> int
+System.Windows.Forms.ComboBox.IdleTextDelayTime.set -> void
+System.Windows.Forms.ComboBox.IdleTextChanged -> System.EventHandler?
+virtual System.Windows.Forms.ComboBox.OnIdleTextChanged(System.EventArgs! e) -> void

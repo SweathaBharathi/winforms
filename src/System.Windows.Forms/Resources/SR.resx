@@ -750,6 +750,15 @@
   <data name="ComboBoxMaxLengthDescr" xml:space="preserve">
     <value>Specifies the maximum number of characters that can be entered into the combo box.</value>
   </data>
+  <data name="ComboBoxIdleTextDescr" xml:space="preserve">
+    <value>Gets the text of the control after the user has stopped changing it for IdleTextDelayTime milliseconds.</value>
+  </data>
+  <data name="ComboBoxIdleTextDelayTimeDescr" xml:space="preserve">
+    <value>The amount of time, in milliseconds, of inactivity in the Text property before IdleText is updated and IdleTextChanged is raised.</value>
+  </data>
+  <data name="ComboBoxOnIdleTextChangedDescr" xml:space="preserve">
+    <value>Occurs when the value of the IdleText property changes.</value>
+  </data>
   <data name="ComboBoxOnDropDownClosedDescr" xml:space="preserve">
     <value>Indicates that the drop-down portion of the combo box has closed.</value>
   </data>
@@ -5507,6 +5516,15 @@ Stack trace where the illegal operation occurred was:
   </data>
   <data name="TextBoxBaseOnAcceptsTabChangedDescr" xml:space="preserve">
     <value>Occurs when the value of the AcceptsTab property changes.</value>
+  </data>
+  <data name="TextBoxIdleTextDescr" xml:space="preserve">
+    <value>Gets the text of the control after the user has stopped changing it for IdleTextDelayTime milliseconds.</value>
+  </data>
+  <data name="TextBoxIdleTextDelayTimeDescr" xml:space="preserve">
+    <value>The amount of time, in milliseconds, of inactivity in the Text property before IdleText is updated and IdleTextChanged is raised.</value>
+  </data>
+  <data name="TextBoxBaseOnIdleTextChangedDescr" xml:space="preserve">
+    <value>Occurs when the value of the IdleText property changes.</value>
   </data>
   <data name="TextBoxBaseOnAutoSizeChangedDescr" xml:space="preserve">
     <value>Event raised when the value of the AutoSize property is changed on TextBoxBase.</value>

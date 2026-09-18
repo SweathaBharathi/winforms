@@ -1028,6 +1028,24 @@ public partial class TextBoxBaseTests
         Assert.Equal(2, callCount);
     }
 
+    [WinFormsFact]
+    public void TextBoxBase_IdleTextDelayTime_Set_GetReturnsExpected()
+    {
+        using TextBox control = new();
+
+        // Default value.
+        Assert.Equal(500, control.IdleTextDelayTime);
+        Assert.Equal(string.Empty, control.IdleText);
+
+        // Set valid value.
+        control.IdleTextDelayTime = 1000;
+        Assert.Equal(1000, control.IdleTextDelayTime);
+
+        // Set invalid values.
+        Assert.Throws<ArgumentOutOfRangeException>(() => control.IdleTextDelayTime = 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => control.IdleTextDelayTime = -1);
+    }
+
     [WinFormsTheory]
     [BoolData]
     public void TextBoxBase_AutoSize_Set_GetReturnsExpected(bool value)

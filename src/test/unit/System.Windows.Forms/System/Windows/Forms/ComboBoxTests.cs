@@ -313,6 +313,24 @@ public class ComboBoxTests
     }
 
     [WinFormsFact]
+    public void ComboBox_IdleTextDelayTime_Set_GetReturnsExpected()
+    {
+        using ComboBox control = new();
+
+        // Default value.
+        Assert.Equal(500, control.IdleTextDelayTime);
+        Assert.Equal(string.Empty, control.IdleText);
+
+        // Set valid value.
+        control.IdleTextDelayTime = 1000;
+        Assert.Equal(1000, control.IdleTextDelayTime);
+
+        // Set invalid values.
+        Assert.Throws<ArgumentOutOfRangeException>(() => control.IdleTextDelayTime = 0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => control.IdleTextDelayTime = -1);
+    }
+
+    [WinFormsFact]
     public void ComboBox_ModernVisualStyles_SystemModeBoundaryChangeWithHandle_RecreatesHandle()
     {
         using SystemVisualSettingsTestScope settingsScope = new(
