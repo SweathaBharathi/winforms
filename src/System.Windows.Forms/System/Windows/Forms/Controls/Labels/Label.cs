@@ -828,6 +828,16 @@ public partial class Label : Control, IAutomationLiveRegion
             return;
         }
 
+        // If the control is docked, its size is owned by the docking layout engine, which resizes it via
+        // SetBounds(..., BoundsSpecified.None). That means _requestedWidth/_requestedHeight below are never
+        // refreshed to reflect the docked size. Resizing to _requestedWidth/_requestedHeight here would
+        // silently revert the control back to its stale, pre-docking size (see https://github.com/dotnet/winforms
+        // discussion of Label losing its Dock=Fill size after a Font change).
+        if (!AutoSize && Dock != DockStyle.None)
+        {
+            return;
+        }
+
         // Resize control to fit around current text
 
         int saveHeight = _requestedHeight;

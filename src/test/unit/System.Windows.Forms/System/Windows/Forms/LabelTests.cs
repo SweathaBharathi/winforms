@@ -302,6 +302,28 @@ public class LabelTests
         Assert.Equal(expected, newSize == oldSize);
     }
 
+    [WinFormsFact]
+    public void Label_Dock_Fill_FontChange_DoesNotRevertToStaleSize_RegressionForIssue41034605()
+    {
+        // Regression test for https://stackoverflow.com/questions/41034605/winforms-label-bug
+        // A Label docked to Fill (with AutoSize false) must keep filling its parent after its
+        // Font changes; it must not revert to its pre-docking requested size.
+        using Form form = new() { ClientSize = new Size(300, 300) };
+        using Label label = new()
+        {
+            AutoSize = false,
+            Dock = DockStyle.Fill
+        };
+        form.Controls.Add(label);
+        form.Show();
+
+        Assert.Equal(form.ClientSize, label.Size);
+
+        label.Font = new Font(label.Font.FontFamily, label.Font.Size + 4);
+
+        Assert.Equal(form.ClientSize, label.Size);
+    }
+
     public static IEnumerable<object[]> BorderStyles_Set_TestData()
     {
         foreach (bool autoSize in new bool[] { true, false })
