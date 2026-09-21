@@ -1062,7 +1062,12 @@ public partial class ToolTip : Component, IExtenderProvider, IHandle<HWND>
                 pt = current.PointToClient(screenCoords);
             }
 
-            HWND found = PInvoke.ChildWindowFromPointEx(baseHwnd, pt, CWP_FLAGS.CWP_SKIPINVISIBLE);
+            // Skip disabled controls in addition to invisible ones so that a tooltip belonging to a
+            // disabled control is never resolved/tracked for the point under the cursor. Without
+            // CWP_SKIPDISABLED, quickly moving the mouse from an enabled control onto a disabled one
+            // (before the enabled control's tooltip has finished displaying) could cause the disabled
+            // control's tooltip to flash briefly, even though disabled controls should never show tooltips.
+            HWND found = PInvoke.ChildWindowFromPointEx(baseHwnd, pt, CWP_FLAGS.CWP_SKIPINVISIBLE | CWP_FLAGS.CWP_SKIPDISABLED);
             if (found == baseHwnd)
             {
                 hwnd = found;
@@ -2043,6 +2048,14 @@ public partial class ToolTip : Component, IExtenderProvider, IHandle<HWND>
         Size currentTooltipSize = rect.Size;
         PopupEventArgs e = new(window, toolControl, IsBalloon, currentTooltipSize);
         OnPopup(e);
+
+        // Disabled controls should never display a tooltip. Without this check, quickly moving the
+        // mouse from an enabled control onto a disabled one can cause the disabled control's tooltip
+        // to briefly flash on screen before it is dismissed.
+        if (toolControl is not null && !toolControl.Enabled)
+        {
+            e.Cancel = true;
+        }
 
         if (toolControl is DataGridView dataGridView && dataGridView.CancelToolTipPopup(this))
         {

@@ -869,6 +869,39 @@ public class ToolTipTests
         //     Times.Once);
     }
 
+    [WinFormsFact]
+    public unsafe void ToolTip_WmShow_DoesNotDisplay_ForDisabledControl()
+    {
+        // Regression test for https://stackoverflow.com/questions/21131971: a tooltip must never be
+        // displayed for a disabled control, even if the native tooltip control had already resolved the
+        // tool for the point under the cursor (e.g. when the mouse quickly moves from an enabled control
+        // onto a disabled one).
+
+        // We need a Form because tooltips don't work on controls without a valid parent.
+        using Form form = new();
+        using ToolTip toolTip = new();
+        using Button button = new() { Enabled = false };
+
+        toolTip.SetToolTip(button, "Some test text");
+        form.Controls.Add(button);
+        form.Show();
+
+        Assert.NotEqual(IntPtr.Zero, button.Handle);
+        Assert.True(toolTip.GetHandleCreated());
+
+        // Post MOUSEMOVE to the tooltip queue and then just remove it from the queue without handling.
+        // This will update the point returned by GetMessagePos which is used by PInvoke.TTM_POPUP to determine the tool to display.
+        Assert.True(PInvokeCore.PostMessage(toolTip, PInvokeCore.WM_MOUSEMOVE, lParam: PARAM.FromPoint(button.GetToolNativeScreenRectangle().Location)));
+        MSG msg = default;
+        Assert.True(PInvokeCore.PeekMessage(&msg, toolTip, PInvokeCore.WM_MOUSEMOVE, PInvokeCore.WM_MOUSEMOVE, PEEK_MESSAGE_REMOVE_TYPE.PM_REMOVE));
+
+        // Ask the tooltip to show itself for the currently resolved tool.
+        PInvokeCore.SendMessage(toolTip, PInvoke.TTM_POPUP);
+
+        // The tooltip window must not be visible, since the associated control is disabled.
+        Assert.False(PInvoke.IsWindowVisible(toolTip));
+    }
+
     [ActiveIssue("https://github.com/dotnet/winforms/issues/11234")]
     [WinFormsFact]
     [SkipOnArchitecture(TestArchitectures.X64,
