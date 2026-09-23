@@ -5437,7 +5437,17 @@ public partial class ListView : Control
 
         // Native ListView expects tooltip HWND as a wParam and ignores lParam
         HWND oldHandle = (HWND)PInvokeCore.SendMessage(this, PInvoke.LVM_SETTOOLTIPS, toolTip);
-        PInvoke.DestroyWindow(oldHandle);
+
+        // The handle returned by LVM_SETTOOLTIPS is the tooltip window ListView was previously using.
+        // The very first time this is called that is ListView's own, internally created, default tooltip
+        // window and it is safe to destroy it. On subsequent calls (e.g. calling ToolTip.SetToolTip again
+        // to change the caption) the returned handle is the ToolTip control's own native window, which was
+        // set as ListView's tooltip window by the previous call. Destroying that window would tear down the
+        // shared ToolTip component, breaking tooltips for every control it is associated with.
+        if (oldHandle != toolTip.HWND)
+        {
+            PInvoke.DestroyWindow(oldHandle);
+        }
     }
 
     internal void SetItemImage(int itemIndex, int imageIndex)

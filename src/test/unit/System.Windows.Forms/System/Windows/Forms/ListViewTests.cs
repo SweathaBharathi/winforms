@@ -5132,6 +5132,26 @@ public class ListViewTests
         Assert.Equal(text, actual);
     }
 
+    [WinFormsFact]
+    public void ListView_SetToolTip_CalledMultipleTimes_DoesNotDestroyToolTipWindow()
+    {
+        // Regression test: calling ToolTip.SetToolTip on a ListView more than once used to destroy
+        // the ToolTip control's own native window, leaving no tooltip shown at all afterwards.
+        using ListView listView = new();
+        using ToolTip toolTip = new();
+        listView.CreateControl();
+
+        Assert.NotEqual(IntPtr.Zero, toolTip.Handle); // A workaround to create the toolTip native window Handle
+
+        toolTip.SetToolTip(listView, "First text");
+        Assert.True((bool)toolTip.TestAccessor.Dynamic.GetHandleCreated());
+
+        toolTip.SetToolTip(listView, "Second text");
+
+        Assert.True((bool)toolTip.TestAccessor.Dynamic.GetHandleCreated());
+        Assert.Equal("Second text", listView.TestAccessor.Dynamic._toolTipCaption);
+    }
+
     [WinFormsTheory]
     [InlineData(View.Details)]
     [InlineData(View.LargeIcon)]
