@@ -528,6 +528,7 @@ public partial class ToolTip : Component, IExtenderProvider, IHandle<HWND>
                 }
 
                 currentTopLevel.ParentChanged += OnTopLevelPropertyChanged;
+                currentTopLevel.VisibleChanged += OnTopLevelVisibleChanged;
             }
 
             return currentTopLevel;
@@ -671,6 +672,37 @@ public partial class ToolTip : Component, IExtenderProvider, IHandle<HWND>
     }
 
     /// <summary>
+    ///  A tooltip is shown in an owned popup window, which Windows does not automatically hide when its
+    ///  owner is hidden (unlike a minimize). Explicitly hide the currently displayed tooltip when the
+    ///  top level control (e.g. a Form) becomes invisible so it doesn't remain visible on the screen.
+    /// </summary>
+    private void OnTopLevelVisibleChanged(object? sender, EventArgs eventargs)
+    {
+        if (sender is not Control { Visible: false } || !GetHandleCreated())
+        {
+            return;
+        }
+
+        // Hide any tracked tooltips (e.g. tooltips shown manually via Show(), such as
+        // ToolStripItem tooltips). These aren't reported by TTM_GETCURRENTTOOLW below
+        // since they're activated explicitly rather than through mouse-hover tracking.
+        HideAllToolTips();
+
+        // Hide the currently active automatic (mouse-hover triggered) tooltip, if any.
+        IWin32Window? window = GetCurrentToolWindow();
+        if (window is not null)
+        {
+            Hide(window);
+        }
+
+        // TTM_TRACKACTIVATE(FALSE)/TTM_DELTOOLW (sent above) only tell comctl32 to deactivate
+        // tracking; they don't reliably hide the tooltip's own owned popup window (the same
+        // native quirk worked around in WmWindowPosChanged). Force the window itself closed so
+        // it doesn't remain rendered on screen after its owner has been hidden.
+        PInvoke.ShowWindow(this, SHOW_WINDOW_CMD.SW_HIDE);
+    }
+
+    /// <summary>
     ///  Returns true if the tooltip can offer an extender property to the specified target component.
     /// </summary>
     public bool CanExtend(object target) => target is Control;
@@ -685,6 +717,7 @@ public partial class ToolTip : Component, IExtenderProvider, IHandle<HWND>
         _topLevelControl.ParentChanged -= OnTopLevelPropertyChanged;
         _topLevelControl.HandleCreated -= TopLevelCreated;
         _topLevelControl.HandleDestroyed -= TopLevelDestroyed;
+        _topLevelControl.VisibleChanged -= OnTopLevelVisibleChanged;
     }
 
     /// <summary>

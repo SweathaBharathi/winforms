@@ -3702,6 +3702,30 @@ public partial class ToolStripTests : IDisposable
         Assert.False(control.IsHandleCreated);
     }
 
+    [WinFormsFact]
+    public void ToolStrip_ItemToolTip_HiddenWhenOwnerFormIsHidden()
+    {
+        // Regression test: https://stackoverflow.com/questions/40928474
+        // A ToolStripItem tooltip is shown by ToolStrip's internal (tracked) ToolTip.
+        // Verify it is explicitly hidden when the owner form becomes invisible, since
+        // Windows does not automatically hide an owned popup window when its owner is hidden.
+        using Form form = new();
+        using ToolStrip toolStrip = new() { ShowItemToolTips = true };
+        using ToolStripButton button = new() { ToolTipText = "Take a new screenshot", AutoToolTip = true };
+        toolStrip.Items.Add(button);
+        form.Controls.Add(toolStrip);
+
+        form.Show();
+
+        toolStrip.UpdateToolTip(button);
+
+        Assert.True(PInvoke.IsWindowVisible(toolStrip.ToolTip));
+
+        form.Hide();
+
+        Assert.False(PInvoke.IsWindowVisible(toolStrip.ToolTip));
+    }
+
     [WinFormsTheory]
     [BoolData]
     public void ToolStrip_ShowItemToolTips_SetWithOverflowButton_GetReturnsExpected(bool value)

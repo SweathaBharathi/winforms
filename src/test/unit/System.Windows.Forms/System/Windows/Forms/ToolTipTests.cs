@@ -778,6 +778,30 @@ public class ToolTipTests
     }
 
     [WinFormsFact]
+    public void ToolTip_HiddenWhenOwnerFormIsHidden()
+    {
+        // Regression test: https://stackoverflow.com/questions/40928474
+        // A visible tooltip is shown in an owned popup window, which Windows does not
+        // automatically hide when its owner form is hidden. Verify the tooltip is
+        // explicitly hidden when the owner form becomes invisible.
+        using Form form = new();
+        using Control control = new();
+        form.Controls.Add(control);
+        using ToolTip toolTip = new();
+
+        form.Show();
+        control.CreateControl();
+
+        toolTip.Show("Some test text", control);
+
+        Assert.True(PInvoke.IsWindowVisible(toolTip));
+
+        form.Hide();
+
+        Assert.False(PInvoke.IsWindowVisible(toolTip));
+    }
+
+    [WinFormsFact]
     public void ToolTip_ToString_Invoke_ReturnsExpected()
     {
         using ToolTip toolTip = new();
