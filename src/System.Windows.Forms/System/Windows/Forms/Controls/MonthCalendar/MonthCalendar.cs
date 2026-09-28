@@ -1208,7 +1208,8 @@ public partial class MonthCalendar : Control
             }
             else
             {
-                int nRows = (newDimensionLength - todayHeight + InsertHeightSize) / (calendarHeight + InsertHeightSize);
+                int reservedTodayHeight = ShowToday ? todayHeight : 0;
+                int nRows = (newDimensionLength - reservedTodayHeight + InsertHeightSize) / (calendarHeight + InsertHeightSize);
                 _dimensions.Height = (nRows < 1) ? 1 : nRows;
             }
         }
@@ -1227,7 +1228,14 @@ public partial class MonthCalendar : Control
         }
 
         minSize.Width = (minSize.Width + InsertWidthSize) * _dimensions.Width - InsertWidthSize;
-        minSize.Height = (calendarHeight + InsertHeightSize) * _dimensions.Height - InsertHeightSize + todayHeight;
+        minSize.Height = (calendarHeight + InsertHeightSize) * _dimensions.Height - InsertHeightSize;
+
+        // Only reserve space for the "today" string when it's actually shown. Otherwise, the
+        // control ends up with extra, unused space at the bottom (see https://stackoverflow.com/q/1976616).
+        if (ShowToday)
+        {
+            minSize.Height += todayHeight;
+        }
 
         // If the width we've calculated is too small to fit the Today string, enlarge the width to fit
         if (IsHandleCreated)

@@ -2288,6 +2288,24 @@ public class MonthCalendarTests
     }
 
     [WinFormsFact]
+    public void MonthCalendar_ShowToday_False_DoesNotReserveExtraHeight_RegressionForIssue1976616()
+    {
+        // Regression test for https://stackoverflow.com/questions/1976616 - the control used to always
+        // reserve height for the "today" string even when ShowToday was false, resulting in extra
+        // unused space (an "extra border") at the bottom of the control.
+        using SubMonthCalendar control = new()
+        {
+            ShowToday = true
+        };
+        int heightWithToday = control.PreferredSize.Height;
+
+        control.ShowToday = false;
+        int heightWithoutToday = control.PreferredSize.Height;
+
+        Assert.True(heightWithoutToday < heightWithToday);
+    }
+
+    [WinFormsFact]
     public void MonthCalendar_CreateAccessibilityInstance_Invoke_ReturnsExpected()
     {
         using SubMonthCalendar control = new();
