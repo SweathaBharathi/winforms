@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
@@ -132,6 +132,8 @@ internal sealed class AnimatedCheckGlyphRenderer : AnimatedControlRenderer
         try
         {
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
             using GraphicsPath path = CreateBoxPath(bounds, flatStyle);
 
             using (var brush = backColor.GetCachedSolidBrushScope())
@@ -143,10 +145,17 @@ internal sealed class AnimatedCheckGlyphRenderer : AnimatedControlRenderer
             // twice as thick as the other styles, which made the glyph look overly bold and blurry compared
             // to FlatStyle.Standard and FlatStyle.Flat (see https://github.com/dotnet/winforms/issues/14757).
             int borderThickness = Math.Max(1, Control.LogicalToDeviceUnits(1));
+            float borderInset = borderThickness / 2f;
+            RectangleF borderBounds = new(
+                bounds.X + borderInset,
+                bounds.Y + borderInset,
+                bounds.Width - borderThickness,
+                bounds.Height - borderThickness);
+            using GraphicsPath borderPath = CreateBoxPath(borderBounds, flatStyle);
 
-            using (var pen = new Pen(borderColor, borderThickness) { Alignment = PenAlignment.Inset })
+            using (var pen = new Pen(borderColor, borderThickness))
             {
-                graphics.DrawPath(pen, path);
+                graphics.DrawPath(pen, borderPath);
             }
 
             Color glyphColor = enabled
@@ -242,7 +251,7 @@ internal sealed class AnimatedCheckGlyphRenderer : AnimatedControlRenderer
     private static float EaseOut(float progress)
         => 1 - ((1 - progress) * (1 - progress));
 
-    private static GraphicsPath CreateBoxPath(Rectangle bounds, FlatStyle flatStyle)
+    private static GraphicsPath CreateBoxPath(RectangleF bounds, FlatStyle flatStyle)
     {
         GraphicsPath path = new();
         if (flatStyle == FlatStyle.Flat)
@@ -253,7 +262,7 @@ internal sealed class AnimatedCheckGlyphRenderer : AnimatedControlRenderer
 
         double radiusFactor = flatStyle == FlatStyle.Popup ? 0.3 : 0.2;
         int radius = Math.Max(1, (int)(Math.Min(bounds.Width, bounds.Height) * radiusFactor));
-        path.AddRoundedRectangle(bounds, new Size(radius, radius));
+        path.AddRoundedRectangle(bounds, new SizeF(radius, radius));
         return path;
     }
 
