@@ -532,12 +532,18 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
 
         try
         {
-            // Verify that the user is not starting the string with a "-"
-            // before attempting to set the Value property since a "-" is a valid character with
-            // which to start a string representing a negative number.
-            if (!string.IsNullOrEmpty(Text) &&
-                !(Text.Length == 1 && Text == "-"))
+            if (string.IsNullOrEmpty(Text))
             {
+                // The user cleared the control entirely (e.g. deleted all the text and moved
+                // focus away). Rather than silently keeping whatever value was previously set,
+                // reset to the minimum allowed value so the displayed text always matches Value.
+                Value = Constrain(Minimum);
+            }
+            else if (!(Text.Length == 1 && Text == "-"))
+            {
+                // Verify that the user is not starting the string with a "-"
+                // before attempting to set the Value property since a "-" is a valid character with
+                // which to start a string representing a negative number.
                 if (Hexadecimal)
                 {
                     Value = Constrain(Convert.ToDecimal(Convert.ToInt32(Text, 16)));
@@ -735,9 +741,12 @@ public partial class NumericUpDown : UpDownBase, ISupportInitialize
 
         // Verify that the user is not starting the string with a "-"
         // before attempting to set the Value property since a "-" is a valid character with
-        // which to start a string representing a negative number.
-        if (_currentValueChanged || (!string.IsNullOrEmpty(Text) &&
-            !(Text.Length == 1 && Text == "-")))
+        // which to start a string representing a negative number. Note that an empty Text
+        // (e.g. the user cleared the control and moved focus away) must still be reformatted
+        // to reflect the current value; otherwise the control would be left blank even though
+        // its Value did not change (see https://github.com/dotnet/winforms/issues - NumericUpDown
+        // input doesn't appear after losing focus but value stays the same).
+        if (_currentValueChanged || !(Text.Length == 1 && Text == "-"))
         {
             _currentValueChanged = false;
             ChangingText = true;

@@ -527,6 +527,28 @@ public class NumericUpDownTests
     }
 
     [WinFormsFact]
+    public void NumericUpDown_UpdateEditText_ClearedText_ResetsValueToMinimum()
+    {
+        // Regression test: clearing the text and losing focus used to leave the control's Text
+        // blank while silently keeping the previous Value. It should instead reset Value to
+        // Minimum and redisplay it.
+        using NumericUpDown upDown = new()
+        {
+            Minimum = 1,
+            Maximum = 10,
+            Value = 5
+        };
+
+        upDown.Text = string.Empty;
+
+        MethodInfo updateEditText = typeof(NumericUpDown).GetMethod("UpdateEditText", BindingFlags.NonPublic | BindingFlags.Instance);
+        updateEditText.Invoke(upDown, null);
+
+        upDown.Value.Should().Be(1);
+        upDown.Text.Should().Be("1");
+    }
+
+    [WinFormsFact]
     public void NumericUpDown_ThousandsSeparator_Get_ReturnsExpected()
     {
         using SubNumericUpDown subUpDown = new();
