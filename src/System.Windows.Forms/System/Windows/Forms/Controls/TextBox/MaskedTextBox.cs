@@ -2207,6 +2207,18 @@ public partial class MaskedTextBox : TextBoxBase
                     }
 
                     startPosition = testPos;
+
+                    // A space that doesn't correspond to a mask literal (e.g. a "450 622 097"-style separator in
+                    // pasted text) must not be handed to PlaceChar when ResetOnSpace is enabled: MaskedTextProvider
+                    // would treat it as a deliberate "clear this position" request and report success, silently
+                    // consuming an edit position without displaying anything. That shifts every subsequent pasted
+                    // character one position to the right, producing a misaligned/corrupted result. Treat it the
+                    // same as any other non-matching character instead: reject it and move on without advancing.
+                    if (ch == ' ' && _maskedTextProvider.ResetOnSpace)
+                    {
+                        OnMaskInputRejected(new MaskInputRejectedEventArgs(startPosition, MaskedTextResultHint.InvalidInput));
+                        continue;
+                    }
                 }
 
                 int length = endPos >= startPosition ? 1 : 0;
@@ -2875,6 +2887,17 @@ public partial class MaskedTextBox : TextBoxBase
         {
             Debug.Fail(ex.ToString());
             return;
+        }
+
+        // MaskedTextBox is always single-line (Multiline is hard-coded to false), matching the behavior of the
+        // native single-line Edit control, which truncates pasted text at the first line break. Without this,
+        // clipboard text containing embedded newlines (e.g. copied from Excel or a multi-line source) would have
+        // every character - including the '\r'/'\n' themselves - fed through the mask character-by-character,
+        // producing a mis-formatted or corrupted result instead of being rejected/truncated like a normal paste.
+        int newLineIndex = text.IndexOfAny(['\r', '\n']);
+        if (newLineIndex >= 0)
+        {
+            text = text[..newLineIndex];
         }
 
         PasteInt(text);

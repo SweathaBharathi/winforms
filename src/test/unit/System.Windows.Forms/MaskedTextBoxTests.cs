@@ -830,4 +830,26 @@ public class MaskedTextBoxTests : IDisposable
             _maskedTextBox.MaskedTextProvider.PasswordChar.Should().Be('●');
         }
     }
+
+    [WinFormsFact]
+    public void MaskedTextBox_Paste_TextWithEmbeddedNewLine_TruncatesAtFirstLine()
+    {
+        _maskedTextBox.Mask = "000-000-000";
+        Clipboard.SetText("450622097\r\nsomeOtherLine");
+
+        _maskedTextBox.Paste();
+
+        _maskedTextBox.Text.Should().Be("450-622-097");
+    }
+
+    [WinFormsFact]
+    public void MaskedTextBox_Paste_TextWithSpacesInPlaceOfLiterals_DoesNotMisalignDigits()
+    {
+        _maskedTextBox.Mask = "000-000-000";
+        Clipboard.SetText("450 622 097");
+
+        _maskedTextBox.Paste();
+
+        _maskedTextBox.Text.Should().Be("450-622-097");
+    }
 }
