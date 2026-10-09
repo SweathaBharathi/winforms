@@ -2752,37 +2752,21 @@ public abstract partial class TextBoxBase : Control
     }
 
     /// <summary>
-    ///  Creates the tapered geometry used to paint the lower edge without covering the rounded corners.
+    ///  Creates the lower edge band within the straight portion of the rounded field.
     /// </summary>
     internal static GraphicsPath CreateVisualStylesBottomEdgePath(
         Rectangle bounds,
         int cornerSize,
         int indicatorThickness)
     {
-        float cornerRadius = cornerSize / 2f;
-        float upperHeight = indicatorThickness / 2f;
-        float lowerHeight = indicatorThickness - upperHeight;
-        float upperCornerInset = cornerRadius / 4f;
-        float lowerCornerInset = cornerRadius;
+        float cornerRadius = Math.Min(cornerSize / 2f, bounds.Width / 2f);
 
         GraphicsPath path = new();
-        path.StartFigure();
-        path.AddLine(
-            bounds.Left + upperCornerInset,
-            bounds.Bottom - upperHeight,
-            bounds.Right - upperCornerInset,
-            bounds.Bottom - upperHeight);
-        path.AddLine(
-            bounds.Right - upperCornerInset,
-            bounds.Bottom - upperHeight,
-            bounds.Right - lowerCornerInset,
-            bounds.Bottom + lowerHeight);
-        path.AddLine(
-            bounds.Right - lowerCornerInset,
-            bounds.Bottom + lowerHeight,
-            bounds.Left + lowerCornerInset,
-            bounds.Bottom + lowerHeight);
-        path.CloseFigure();
+        path.AddRectangle(new RectangleF(
+            bounds.Left + cornerRadius,
+            bounds.Bottom - indicatorThickness,
+            bounds.Width - cornerRadius * 2,
+            indicatorThickness));
         return path;
     }
 

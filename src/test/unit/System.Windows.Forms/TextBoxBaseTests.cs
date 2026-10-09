@@ -5,6 +5,7 @@
 
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms.TestUtilities;
 using Moq;
@@ -16,6 +17,20 @@ namespace System.Windows.Forms.Tests;
 public partial class TextBoxBaseTests
 {
     private static readonly int s_preferredHeight = Control.DefaultFont.Height + SystemInformation.BorderSize.Height * 4 + 3;
+
+    [Fact]
+    public void TextBoxBase_CreateVisualStylesBottomEdgePath_StopsAtRoundedFieldSideEdges()
+    {
+        using GraphicsPath path = TextBoxBase.CreateVisualStylesBottomEdgePath(
+            new Rectangle(0, 0, 140, 30),
+            cornerSize: 13,
+            indicatorThickness: 4);
+
+        Assert.Equal(new PointF(6.5f, 25), path.PathPoints[0]);
+        Assert.Equal(new PointF(133.5f, 25), path.PathPoints[1]);
+        Assert.Equal(new PointF(133.5f, 29), path.PathPoints[2]);
+        Assert.Equal(new PointF(6.5f, 29), path.PathPoints[3]);
+    }
 
     [WinFormsTheory]
     [InlineData(typeof(TextBox))]
