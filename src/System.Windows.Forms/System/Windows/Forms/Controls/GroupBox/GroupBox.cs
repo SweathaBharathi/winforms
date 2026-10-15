@@ -454,7 +454,7 @@ public partial class GroupBox : Control
             // specified by the theme. This is a temporary workaround till we find a good solution for the
             // "default theme color" issue.
 
-            if (ShouldSerializeForeColor() || Application.IsDarkModeEnabled || !Enabled)
+            if (ShouldSerializeForeColor() || ForeColor != DefaultForeColor || Application.IsDarkModeEnabled || !Enabled)
             {
                 Color textColor = Enabled ? ForeColor : TextRenderer.DisabledTextColor(BackColor);
 

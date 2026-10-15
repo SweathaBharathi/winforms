@@ -306,14 +306,15 @@ public partial class ComboBox
                 return;
             }
 
-            Color textColor = drawFocusedSelection
-                ? SystemColors.HighlightText
-                : comboBox.Enabled
-                    ? comboBox.ShouldSerializeForeColor()
-                        ? comboBox.ForeColor
-                        : PopupButtonColorMath.GetReadableForeColor(
-                            background)
-                    : ModernControlColorMath.GetDisabledForeColor(background);
+            bool hasCustomForeColor = comboBox.ShouldSerializeForeColor()
+                || comboBox.ForeColor != Control.DefaultForeColor;
+            Color textColor = comboBox.Enabled
+                ? hasCustomForeColor
+                    ? comboBox.ForeColor
+                    : drawFocusedSelection
+                        ? SystemColors.HighlightText
+                        : PopupButtonColorMath.GetReadableForeColor(background)
+                : ModernControlColorMath.GetDisabledForeColor(background);
             TextFormatFlags flags = TextFormatFlags.SingleLine
                 | TextFormatFlags.VerticalCenter
                 | TextFormatFlags.EndEllipsis

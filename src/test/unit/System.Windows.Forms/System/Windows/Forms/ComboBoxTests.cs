@@ -2894,6 +2894,15 @@ public class ComboBoxTests
         Assert.False(control.IsHandleCreated);
     }
 
+    [WinFormsFact]
+    public void ComboBox_ForeColor_GetWithParent_ReturnsParentForeColor()
+    {
+        using Control parent = new() { ForeColor = Color.Red };
+        using ComboBox control = new() { Parent = parent };
+
+        Assert.Equal(Color.Red, control.ForeColor);
+    }
+
     public static IEnumerable<object[]> ForeColor_SetWithHandle_TestData()
     {
         yield return new object[] { Color.Empty, SystemColors.WindowText, 0 };

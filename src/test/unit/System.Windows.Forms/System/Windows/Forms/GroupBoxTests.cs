@@ -16,6 +16,15 @@ namespace System.Windows.Forms.Tests;
 public class GroupBoxTests
 {
     [WinFormsFact]
+    public void GroupBox_ForeColor_GetWithParent_ReturnsParentForeColor()
+    {
+        using Control parent = new() { ForeColor = Color.Red };
+        using GroupBox control = new() { Parent = parent };
+
+        Assert.Equal(Color.Red, control.ForeColor);
+    }
+
+    [WinFormsFact]
     public void GroupBox_Ctor_Default()
     {
         using SubGroupBox control = new();

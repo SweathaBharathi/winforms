@@ -598,7 +598,7 @@ public partial class ComboBox : ListControl
     /// </summary>
     public override Color ForeColor
     {
-        get => ShouldSerializeForeColor() ? base.ForeColor : SystemColors.WindowText;
+        get => ShouldSerializeForeColor() || ParentInternal is not null ? base.ForeColor : SystemColors.WindowText;
         set => base.ForeColor = value;
     }
 
