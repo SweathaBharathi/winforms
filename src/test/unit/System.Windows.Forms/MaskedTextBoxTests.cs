@@ -425,6 +425,20 @@ public class MaskedTextBoxTests : IDisposable
         control.MaskFull.Should().Be(expectedMaskFull);
     }
 
+    [WinFormsFact]
+    public void MaskedTextBox_Text_WithOptionalSignMask_AlignsPositiveValueFromRight()
+    {
+        using MaskedTextBox control = new()
+        {
+            Mask = "#9.99",
+            TextMaskFormat = MaskFormat.IncludePromptAndLiterals
+        };
+
+        control.Text = "0.14";
+
+        control.Text.Should().Be("_0.14");
+    }
+
     [WinFormsTheory]
     [InlineData(InsertKeyMode.Overwrite, "00000", true)]
     [InlineData(InsertKeyMode.Insert, "00000", false)]

@@ -1164,6 +1164,15 @@ public partial class MaskedTextBox : TextBoxBase
             }
             else
             {
+                // A leading '#' is commonly used for an optional sign. Align unsigned values with the
+                // rightmost edit positions so a value such as "0.14" matches the "#9.99" mask.
+                if (value[0] is not ('+' or '-') &&
+                    _maskedTextProvider.Mask.StartsWith('#') &&
+                    value.Length < _maskedTextProvider.Mask.Length)
+                {
+                    value = value.PadLeft(_maskedTextProvider.Mask.Length);
+                }
+
                 if (RejectInputOnFirstFailure)
                 {
                     string oldText = TextOutput;
