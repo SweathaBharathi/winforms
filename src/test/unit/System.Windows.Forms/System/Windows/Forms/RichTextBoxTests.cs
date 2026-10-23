@@ -2773,6 +2773,42 @@ public partial class RichTextBoxTests
     }
 
     [WinFormsFact]
+    public void RichTextBox_Rtf_SetSameAfterResizing_CallsContentsResized()
+    {
+        using RichTextBox control = new()
+        {
+            Text = "Hello World"
+        };
+        string rtf = control.Rtf;
+        int contentsResizedCallCount = 0;
+        control.ContentsResized += (sender, e) =>
+        {
+            contentsResizedCallCount++;
+            control.Height = e.NewRectangle.Height;
+        };
+        int textChangedCallCount = 0;
+        control.TextChanged += (sender, e) => textChangedCallCount++;
+
+        for (int i = 0; i < 2; i++)
+        {
+            control.Size = new Size(400, 300);
+            int previousCallCount = contentsResizedCallCount;
+
+            control.Rtf = rtf;
+
+            Assert.True(contentsResizedCallCount > previousCallCount);
+            Assert.True(control.Height < 300);
+            Assert.Equal(rtf, control.Rtf);
+            Assert.Equal(0, textChangedCallCount);
+        }
+
+        int previousAppendCallCount = contentsResizedCallCount;
+        control.AppendText(Environment.NewLine + "Another line");
+
+        Assert.True(contentsResizedCallCount > previousAppendCallCount);
+    }
+
+    [WinFormsFact]
     public void RichTextBox_Rtf_SetWithHandler_CallsTextChanged()
     {
         using RichTextBox control = new();

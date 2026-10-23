@@ -647,6 +647,12 @@ public partial class RichTextBox : TextBoxBase
 
             if (value.Equals(Rtf))
             {
+                if (IsHandleCreated)
+                {
+                    // Recalculate the content size without reloading unchanged RTF.
+                    PInvokeCore.SendMessage(this, PInvokeCore.EM_REQUESTRESIZE);
+                }
+
                 return;
             }
 
