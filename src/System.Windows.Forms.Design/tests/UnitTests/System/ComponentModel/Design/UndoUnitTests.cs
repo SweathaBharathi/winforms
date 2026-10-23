@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable disable
@@ -66,9 +66,27 @@ public class UndoUnitTests : UndoEngine
 
     [Theory]
     [BoolData]
-    public void UndoEngine_Dispose_Boolean(bool disposing)
+    public void UndoEngine_Dispose_Boolean_DetachesServicesOnlyWhenDisposing(bool disposing)
     {
+        var host = (IDesignerHost)GetService(typeof(IDesignerHost));
+        var changeService = (IComponentChangeService)GetService(typeof(IComponentChangeService));
+        var hostMock = Mock.Get(host);
+        var changeServiceMock = Mock.Get(changeService);
+
         Dispose(disposing);
+
+        Times expected = disposing ? Times.Once() : Times.Never();
+        hostMock.VerifyRemove(h => h.TransactionOpening -= It.IsAny<EventHandler>(), expected);
+        hostMock.VerifyRemove(h => h.TransactionClosed -= It.IsAny<DesignerTransactionCloseEventHandler>(), expected);
+        changeServiceMock.VerifyRemove(s => s.ComponentAdding -= It.IsAny<ComponentEventHandler>(), expected);
+        changeServiceMock.VerifyRemove(s => s.ComponentChanging -= It.IsAny<ComponentChangingEventHandler>(), expected);
+        changeServiceMock.VerifyRemove(s => s.ComponentRemoving -= It.IsAny<ComponentEventHandler>(), expected);
+        changeServiceMock.VerifyRemove(s => s.ComponentAdded -= It.IsAny<ComponentEventHandler>(), expected);
+        changeServiceMock.VerifyRemove(s => s.ComponentChanged -= It.IsAny<ComponentChangedEventHandler>(), expected);
+        changeServiceMock.VerifyRemove(s => s.ComponentRemoved -= It.IsAny<ComponentEventHandler>(), expected);
+        changeServiceMock.VerifyRemove(s => s.ComponentRename -= It.IsAny<ComponentRenameEventHandler>(), expected);
+        Assert.Same(disposing ? null : host, GetService(typeof(IDesignerHost)));
+        Assert.Same(disposing ? null : changeService, GetService(typeof(IComponentChangeService)));
     }
 
     [Fact]
@@ -86,7 +104,7 @@ public class UndoUnitTests : UndoEngine
     [Fact]
     public void UndoEngine_GetService_Type()
     {
-        object? service = GetService(typeof(IDesignerHost));
+        object service = GetService(typeof(IDesignerHost));
 
         Assert.NotNull(service);
     }

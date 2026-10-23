@@ -1,24 +1,42 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 
 using Moq;
 
 namespace System.ComponentModel.Design.Tests;
 
+/// <summary>
+///  Tests filtering of references by their assignable types.
+/// </summary>
 public class ReferenceServiceTests
 {
+    [Fact]
+    public void ReferenceService_GetReferences_Type_FiltersAssignableReferences()
+    {
+        using Container container = new();
+        using Component component = new();
+        using BackgroundWorker worker = new();
+        container.Add(component, "component");
+        container.Add(worker, "worker");
+
+        Mock<IServiceProvider> provider = GetServiceProvider(container);
+        using ReferenceService referenceService = new(provider.Object);
+        IReferenceService service = referenceService;
+
+        Assert.Equal([worker], service.GetReferences(typeof(BackgroundWorker)));
+        Assert.Equal([component, worker], service.GetReferences(typeof(Component)));
+        Assert.Equal([component, worker], service.GetReferences(typeof(IDisposable)));
+        Assert.Empty(service.GetReferences(typeof(string)));
+    }
+
     [Fact]
     public void ReferenceService_Ctor_IServiceProvider()
     {
         using Container container = new();
         Mock<IServiceProvider> provider = GetServiceProvider(container);
-
-        ReferenceService service = new(provider.Object);
+        using ReferenceService service = new(provider.Object);
 
         Assert.NotNull(service);
-
-        ((IDisposable)service).Dispose();
     }
 
     [Fact]
@@ -26,34 +44,23 @@ public class ReferenceServiceTests
     {
         using Container container = new();
         using Component component = new();
-
         container.Add(component, "component");
-
         Mock<IServiceProvider> provider = GetServiceProvider(container);
-        ReferenceService referenceService = new(provider.Object);
+        using ReferenceService referenceService = new(provider.Object);
         IReferenceService service = referenceService;
 
-        object? result = service.GetReference("component");
-
-        Assert.Same(component, result);
-
-        ((IDisposable)referenceService).Dispose();
+        Assert.Same(component, service.GetReference("component"));
     }
 
     [Fact]
     public void ReferenceService_GetReference_InvalidName_ReturnsNull()
     {
         using Container container = new();
-
         Mock<IServiceProvider> provider = GetServiceProvider(container);
-        ReferenceService referenceService = new(provider.Object);
+        using ReferenceService referenceService = new(provider.Object);
         IReferenceService service = referenceService;
 
-        object? result = service.GetReference("invalidName");
-
-        Assert.Null(result);
-
-        ((IDisposable)referenceService).Dispose();
+        Assert.Null(service.GetReference("invalidName"));
     }
 
     [Fact]
@@ -61,18 +68,12 @@ public class ReferenceServiceTests
     {
         using Container container = new();
         using Component component = new();
-
         container.Add(component, "component");
-
         Mock<IServiceProvider> provider = GetServiceProvider(container);
-        ReferenceService referenceService = new(provider.Object);
+        using ReferenceService referenceService = new(provider.Object);
         IReferenceService service = referenceService;
 
-        string? result = service.GetName(component);
-
-        Assert.Equal("component", result);
-
-        ((IDisposable)referenceService).Dispose();
+        Assert.Equal("component", service.GetName(component));
     }
 
     [Fact]
@@ -80,18 +81,12 @@ public class ReferenceServiceTests
     {
         using Container container = new();
         using Component component = new();
-
         container.Add(component, "component");
-
         Mock<IServiceProvider> provider = GetServiceProvider(container);
-        ReferenceService referenceService = new(provider.Object);
+        using ReferenceService referenceService = new(provider.Object);
         IReferenceService service = referenceService;
 
-        IComponent? result = service.GetComponent(component);
-
-        Assert.Same(component, result);
-
-        ((IDisposable)referenceService).Dispose();
+        Assert.Same(component, service.GetComponent(component));
     }
 
     [Fact]
@@ -99,18 +94,12 @@ public class ReferenceServiceTests
     {
         using Container container = new();
         using Component component = new();
-
         container.Add(component, "component");
-
         Mock<IServiceProvider> provider = GetServiceProvider(container);
-        ReferenceService referenceService = new(provider.Object);
+        using ReferenceService referenceService = new(provider.Object);
         IReferenceService service = referenceService;
 
-        object[] references = service.GetReferences();
-
-        Assert.Contains(component, references);
-
-        ((IDisposable)referenceService).Dispose();
+        Assert.Contains(component, service.GetReferences());
     }
 
     [Fact]
@@ -118,35 +107,20 @@ public class ReferenceServiceTests
     {
         using Container container = new();
         using Component component = new();
-
         container.Add(component, "component");
-
         Mock<IServiceProvider> provider = GetServiceProvider(container);
-        ReferenceService referenceService = new(provider.Object);
+        using ReferenceService referenceService = new(provider.Object);
         IReferenceService service = referenceService;
 
-        object[] references = service.GetReferences(typeof(Component));
-
-        Assert.Contains(component, references);
-
-        ((IDisposable)referenceService).Dispose();
+        Assert.Contains(component, service.GetReferences(typeof(Component)));
     }
 
-    private static Mock<IServiceProvider> GetServiceProvider(
-        IContainer container)
+    private static Mock<IServiceProvider> GetServiceProvider(IContainer container)
     {
         Mock<IServiceProvider> provider = new();
         Mock<IComponentChangeService> changeService = new();
-
-        provider
-            .Setup(serviceProvider =>
-                serviceProvider.GetService(typeof(IContainer)))
-            .Returns(container);
-
-        provider
-            .Setup(serviceProvider =>
-                serviceProvider.GetService(typeof(IComponentChangeService)))
-            .Returns(changeService.Object);
+        provider.Setup(p => p.GetService(typeof(IContainer))).Returns(container);
+        provider.Setup(p => p.GetService(typeof(IComponentChangeService))).Returns(changeService.Object);
 
         return provider;
     }
