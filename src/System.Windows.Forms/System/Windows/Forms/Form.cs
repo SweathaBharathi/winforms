@@ -115,6 +115,7 @@ public partial class Form : ContainerControl
     private static readonly int s_propOwner = PropertyStore.CreateKey();
     private static readonly int s_propOwnedForms = PropertyStore.CreateKey();
     private static readonly int s_propMaximizedBounds = PropertyStore.CreateKey();
+    private static readonly int s_propRestoreTopMost = PropertyStore.CreateKey();
 
     private static readonly int s_propMinTrackSize = PropertyStore.CreateKey();
     private static readonly int s_propMaxTrackSize = PropertyStore.CreateKey();
@@ -4334,6 +4335,21 @@ public partial class Form : ContainerControl
             }
         }
 
+        bool ownerIsTopMost = OwnerInternal?.TopMost == true;
+        if (!ownerIsTopMost
+            && Properties.TryGetValue(s_propDialogOwner, out IWin32Window? dialogOwner))
+        {
+            ownerIsTopMost = dialogOwner.GetExtendedStyle().HasFlag(WINDOW_EX_STYLE.WS_EX_TOPMOST);
+        }
+
+        if (GetState(States.Modal)
+            && !TopMost
+            && ownerIsTopMost)
+        {
+            TopMost = true;
+            Properties.AddValue(s_propRestoreTopMost, true);
+        }
+
         if (IsHandleCreated)
         {
             // Finally fire the new OnShown(unless the form has already been closed).
@@ -5826,22 +5842,6 @@ public partial class Form : ContainerControl
                     // Set the new parent.
                     PInvokeCore.SetWindowLong(this, WINDOW_LONG_PTR_INDEX.GWL_HWNDPARENT, ownerHwnd);
                 }
-
-                // Windows keeps topmost windows in a z-band above all other windows, regardless of
-                // ownership. This means an owned window that isn't itself topmost can still end up
-                // behind its topmost owner. Elevate this dialog into the topmost z-band for the
-                // duration of the modal loop so it isn't hidden behind a topmost owner. This is done
-                // at the native level only, so it doesn't affect the public TopMost property.
-                if (_formState[s_formStateTopMost] == 0
-                    && ((WINDOW_EX_STYLE)PInvokeCore.GetWindowLong(ownerHwnd.Handle, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE))
-                        .HasFlag(WINDOW_EX_STYLE.WS_EX_TOPMOST))
-                {
-                    PInvoke.SetWindowPos(
-                        this,
-                        HWND.HWND_TOPMOST,
-                        0, 0, 0, 0,
-                        SET_WINDOW_POS_FLAGS.SWP_NOMOVE | SET_WINDOW_POS_FLAGS.SWP_NOSIZE);
-                }
             }
 
             try
@@ -5892,6 +5892,12 @@ public partial class Form : ContainerControl
         }
         finally
         {
+            if (Properties.TryGetValue(s_propRestoreTopMost, out bool restoreTopMost) && restoreTopMost)
+            {
+                TopMost = false;
+                Properties.RemoveValue(s_propRestoreTopMost);
+            }
+
             Owner = oldOwner;
             Properties.RemoveValue(s_propDialogOwner);
             GC.KeepAlive(ownerHwnd.Wrapper);
