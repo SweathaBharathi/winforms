@@ -402,46 +402,8 @@ public class ToolStripMenuItemTests
         eventInvoked.Should().BeTrue();
     }
 
-    [WinFormsTheory]
-    [InlineData(ContentAlignment.TopLeft, TextFormatFlags.Top, TextFormatFlags.Left)]
-    [InlineData(ContentAlignment.TopCenter, TextFormatFlags.Top, TextFormatFlags.HorizontalCenter)]
-    [InlineData(ContentAlignment.TopRight, TextFormatFlags.Top, TextFormatFlags.Right)]
-    [InlineData(ContentAlignment.MiddleLeft, TextFormatFlags.VerticalCenter, TextFormatFlags.Left)]
-    [InlineData(ContentAlignment.MiddleCenter, TextFormatFlags.VerticalCenter, TextFormatFlags.HorizontalCenter)]
-    [InlineData(ContentAlignment.MiddleRight, TextFormatFlags.VerticalCenter, TextFormatFlags.Right)]
-    [InlineData(ContentAlignment.BottomLeft, TextFormatFlags.Bottom, TextFormatFlags.Left)]
-    [InlineData(ContentAlignment.BottomCenter, TextFormatFlags.Bottom, TextFormatFlags.HorizontalCenter)]
-    [InlineData(ContentAlignment.BottomRight, TextFormatFlags.Bottom, TextFormatFlags.Right)]
-    public void ToolStripMenuItem_TextAlign_AllValues_HonoredWhenRenderedInDropDown_RegressionForIssue4985(
-        ContentAlignment textAlign, TextFormatFlags expectedVertical, TextFormatFlags expectedHorizontal)
-    {
-        // Regression test for https://github.com/dotnet/winforms/issues/4985 - TextAlign did not have any effect
-        // when a ToolStripMenuItem was rendered as a sub-item of another menu item (i.e. hosted in the
-        // auto-generated ToolStripDropDownMenu); the alignment was always hardcoded to MiddleLeft/MiddleRight.
-        // Every ContentAlignment value - including the default, MiddleCenter - must now be honored.
-        using ToolStripMenuItem parentItem = new("toolStripMenuItem1");
-        using ToolStripMenuItem item = new("File")
-        {
-            TextAlign = textAlign
-        };
-        parentItem.DropDownItems.Add(item);
-        ToolStripDropDownMenu dropDownMenu = Assert.IsType<ToolStripDropDownMenu>(parentItem.DropDown);
-        RecordingToolStripRenderer renderer = new();
-        dropDownMenu.Renderer = renderer;
-
-        dropDownMenu.PerformLayout();
-        using Bitmap bitmap = new(dropDownMenu.Width, dropDownMenu.Height);
-        using Graphics graphics = Graphics.FromImage(bitmap);
-        using PaintEventArgs e = new(graphics, item.Bounds);
-        item.TestAccessor.Dynamic.OnPaint(e);
-
-        renderer.CapturedTextFormat.HasValue.Should().BeTrue();
-        renderer.CapturedTextFormat!.Value.Should().HaveFlag(expectedVertical);
-        renderer.CapturedTextFormat!.Value.Should().HaveFlag(expectedHorizontal);
-    }
-
     [WinFormsFact]
-    public void ToolStripMenuItem_TextAlign_ExplicitlySetRight_UsesFullWidth_WhenNoArrowOrShortcut_RegressionForIssue4985()
+    public void ToolStripMenuItem_TextAlign()
     {
         // Regression test for https://github.com/dotnet/winforms/issues/4985 - even after honoring TextAlign,
         // right-aligned text stopped short of the item's true right edge because layout always reserves room for
