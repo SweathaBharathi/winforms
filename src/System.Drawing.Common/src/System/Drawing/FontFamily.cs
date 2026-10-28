@@ -177,6 +177,7 @@ public sealed unsafe class FontFamily : MarshalByRefObject, IDisposable, IPointe
             return false;
         }
 
+        // GDI+ font families are instances in their font collection, so we can compare the pointers.
         return otherFamily.NativeFamily == NativeFamily;
     }
 
