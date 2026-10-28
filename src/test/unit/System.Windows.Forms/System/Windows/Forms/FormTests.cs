@@ -236,35 +236,119 @@ public partial class FormTests
     }
 
     [WinFormsFact]
-    public void Form_ShowDialogWithOwner_ClosingParentProgrammatically_ChildFormClosedRaisedOnce()
+    public void Form_ShowDialogWithOwner_ClosingOwnerProgrammatically_ChildCloseEventsRaisedOnce()
     {
-        using Form parent = new()
+        using Form owner = new();
+        using Form child = new();
+        int formClosingCallCount = 0;
+        int formClosedCallCount = 0;
+        CloseReason closingReason = CloseReason.None;
+        CloseReason closedReason = CloseReason.None;
+
+        child.FormClosing += (_, e) =>
         {
-            Text = "Parent"
+            formClosingCallCount++;
+            closingReason = e.CloseReason;
+        };
+        child.FormClosed += (_, e) =>
+        {
+            formClosedCallCount++;
+            closedReason = e.CloseReason;
+        };
+        child.Shown += (_, _) => child.BeginInvoke(new Action(owner.Close));
+
+        owner.Show();
+        child.ShowDialog(owner);
+
+        Assert.Equal(1, formClosingCallCount);
+        Assert.Equal(1, formClosedCallCount);
+        Assert.Equal(CloseReason.FormOwnerClosing, closingReason);
+        Assert.Equal(CloseReason.FormOwnerClosing, closedReason);
+    }
+
+    [WinFormsFact]
+    public void Form_ShowDialogWithOwner_CanceledOwnerClose_DoesNotRetainClosingState()
+    {
+        using Form owner = new();
+        using Form child = new();
+        List<CloseReason> closingReasons = [];
+        int formClosedCallCount = 0;
+
+        owner.FormClosing += (_, e) => e.Cancel = true;
+        child.FormClosing += (_, e) => closingReasons.Add(e.CloseReason);
+        child.FormClosed += (_, _) => formClosedCallCount++;
+        child.Shown += (_, _) =>
+        {
+            child.BeginInvoke(new Action(() =>
+            {
+                owner.Close();
+                child.DialogResult = DialogResult.OK;
+            }));
         };
 
-        using Form child = new()
+        owner.Show();
+        DialogResult result = child.ShowDialog(owner);
+
+        Assert.Equal(DialogResult.OK, result);
+        Assert.Equal([CloseReason.FormOwnerClosing, CloseReason.None], closingReasons);
+        Assert.Equal(1, formClosedCallCount);
+        Assert.True(owner.Visible);
+    }
+
+    [WinFormsTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Form_ShowDialogWithOwner_CanceledOwnerClose_DialogClosingCanBeCanceled(bool cancelFromOwner)
+    {
+        using Form owner = new();
+        using Form child = new();
+        List<CloseReason> closingReasons = [];
+        int dialogClosingCallCount = 0;
+        int formClosedCallCount = 0;
+        CloseReason closedReason = CloseReason.None;
+        bool dialogCloseAccepted = true;
+
+        owner.FormClosing += (_, e) =>
         {
-            Text = "Child"
+            if (cancelFromOwner)
+            {
+                e.Cancel = true;
+            }
         };
-
-        int childFormClosedCount = 0;
-
-        child.FormClosed += (sender, e) =>
+        child.FormClosing += (_, e) =>
         {
-            childFormClosedCount++;
+            closingReasons.Add(e.CloseReason);
+            if (e.CloseReason == CloseReason.FormOwnerClosing)
+            {
+                e.Cancel = !cancelFromOwner;
+            }
+            else
+            {
+                e.Cancel = dialogClosingCallCount++ == 0;
+            }
         };
-
-        parent.Show();
-
-        child.Shown += (sender, e) =>
+        child.FormClosed += (_, e) =>
         {
-            child.BeginInvoke(new Action(parent.Close));
+            formClosedCallCount++;
+            closedReason = e.CloseReason;
         };
+        child.Shown += (_, _) => child.BeginInvoke(new Action(() =>
+        {
+            owner.Close();
+            child.DialogResult = DialogResult.OK;
+            dialogCloseAccepted = child.CheckCloseDialog(closingOnly: false);
+            child.DialogResult = DialogResult.OK;
+        }));
 
-        child.ShowDialog(parent);
+        owner.Show();
+        DialogResult result = child.ShowDialog(owner);
 
-        Assert.Equal(1, childFormClosedCount);
+        Assert.False(dialogCloseAccepted);
+        Assert.Equal(DialogResult.OK, result);
+        Assert.Equal([CloseReason.FormOwnerClosing, CloseReason.None, CloseReason.None], closingReasons);
+        Assert.Equal(1, formClosedCallCount);
+        Assert.Equal(CloseReason.None, closedReason);
+        Assert.True(owner.Visible);
     }
 
     // non deterministic, commenting out for now

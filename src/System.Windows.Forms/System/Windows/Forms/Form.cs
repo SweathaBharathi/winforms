@@ -6812,14 +6812,6 @@ public partial class Form : ContainerControl
                             e.Cancel = true;
                             break;
                         }
-
-                        // Modal owned forms are running their own message loop via ShowDialog.
-                        // Mark FormClosing as already called so CheckCloseDialog does not raise it again.
-                        if (ownedForms[i].Modal)
-                        {
-                            ownedForms[i].CalledClosing = true;
-                            ownedForms[i].CloseReason = CloseReason.FormOwnerClosing;
-                        }
                     }
                 }
 
@@ -6881,10 +6873,10 @@ public partial class Form : ContainerControl
                     {
                         fc = new FormClosedEventArgs(CloseReason.FormOwnerClosing);
 
-                        // Mark FormClosed as already handled by the owner close path.
-                        // Later CheckCloseDialog should not raise FormClosed again for this modal form.
+                        // Commit modal closing state only after the owner close can no longer be canceled.
                         if (ownedForms[i].Modal)
                         {
+                            ownedForms[i].CalledClosing = true;
                             ownedForms[i].IsClosing = true;
                             ownedForms[i].CloseReason = CloseReason.FormOwnerClosing;
                         }
