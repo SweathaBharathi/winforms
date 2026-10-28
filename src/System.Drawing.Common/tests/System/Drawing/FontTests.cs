@@ -415,9 +415,11 @@ public class FontTests
         using Font clone = Assert.IsType<Font>(font.Clone());
 
         Assert.NotSame(font, clone);
-        Assert.Equal(font.FontFamily.Name, clone.FontFamily.Name);
-        Assert.True(font.Equals(clone));
-        Assert.True(clone.Equals(font));
+        Assert.Equal(font.FontFamily, clone.FontFamily);
+        Assert.Equal(font.OriginalFontName, clone.OriginalFontName);
+        Assert.Equal(font, clone);
+        Assert.Equal(clone, font);
+        Assert.Equal(font.GetHashCode(), clone.GetHashCode());
     }
 
     [Fact]

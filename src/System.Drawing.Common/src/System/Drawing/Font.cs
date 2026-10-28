@@ -677,7 +677,15 @@ public sealed unsafe class Font : MarshalByRefObject, ICloneable, IDisposable, I
         GpFont* font;
         PInvokeGdiPlus.GdipCloneFont(_nativeFont, &font).ThrowIfFailed();
         GC.KeepAlive(this);
-        return new Font(font, _gdiCharSet, _gdiVerticalFont);
+
+        Font clone = new(font, _gdiCharSet, _gdiVerticalFont)
+        {
+            _originalFontName = _originalFontName,
+            _systemFontName = _systemFontName,
+        };
+
+        clone.SetFontFamily(_fontFamily.Clone());
+        return clone;
     }
 
     private void SetFontFamily(FontFamily family)
