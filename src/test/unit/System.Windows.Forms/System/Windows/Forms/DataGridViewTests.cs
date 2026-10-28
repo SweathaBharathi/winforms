@@ -2943,6 +2943,30 @@ public partial class DataGridViewTests : IDisposable
         Assert.Equal(rowsCount2 + 1, control.Rows.Count); // + 1 is the new DGV row
     }
 
+    [WinFormsFact]
+    public void DataGridView_DataSource_RebindMutatedEmptyList_SetsCurrentCell()
+    {
+        using DataGridView control = new()
+        {
+            AutoGenerateColumns = false,
+            BindingContext = new()
+        };
+        control.Columns.Add(new DataGridViewTextBoxColumn());
+        List<object> dataSource = [];
+        control.DataSource = dataSource;
+        CurrencyManager currencyManager = Assert.IsType<CurrencyManager>(control.BindingContext[dataSource]);
+
+        dataSource.Add(new());
+        control.DataSource = null;
+        control.DataSource = dataSource;
+        control.CurrentCell = null;
+        control.CurrentCell = control[0, 0];
+
+        Assert.Same(currencyManager, control.BindingContext[dataSource]);
+        Assert.Equal(0, currencyManager.Position);
+        Assert.Same(control[0, 0], control.CurrentCell);
+    }
+
     private BindingSource GetTestBindingSource(int rowsCount)
     {
         DataTable dt = new();

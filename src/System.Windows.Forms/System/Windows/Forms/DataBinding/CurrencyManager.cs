@@ -221,7 +221,7 @@ public partial class CurrencyManager : BindingManagerBase
         get => listposition;
         set
         {
-            if (listposition == -1)
+            if (listposition == -1 && _list.Count == 0)
             {
                 return;
             }
