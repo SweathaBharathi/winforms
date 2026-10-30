@@ -420,24 +420,18 @@ public partial class ListBox
             // is different to the current text in the native list item, recreate the native list item...
             if (_owner.IsHandleCreated)
             {
-                bool selected = (_owner.SelectedIndex == index);
+                bool selected = _owner.SelectedItems.GetSelected(index);
                 if (string.Compare(_owner.GetItemText(value), _owner.NativeGetItemText(index), true, CultureInfo.CurrentCulture) != 0)
                 {
-                    _owner.NativeRemoveAt(index);
+                    // Replacing an item does not change the selection, unlike removing it.
+                    PInvokeCore.SendMessage(_owner, PInvoke.LB_DELETESTRING, (WPARAM)index);
                     _owner.SelectedItems.SetSelected(index, false);
                     _owner.NativeInsert(index, value);
                     _owner.UpdateMaxItemWidth(value, false);
                     if (selected)
                     {
-                        _owner.SelectedIndex = index;
-                    }
-                }
-                else
-                {
-                    // FOR COMPATIBILITY REASONS
-                    if (selected)
-                    {
-                        _owner.OnSelectedIndexChanged(EventArgs.Empty); // will fire selectedvaluechanged
+                        _owner.NativeSetSelected(index, true);
+                        _owner.SelectedItems.SetSelected(index, true);
                     }
                 }
             }

@@ -902,6 +902,28 @@ public class ListBoxObjectCollectionTests
     }
 
     [WinFormsFact]
+    public void ListBoxObjectCollection_Item_SetSelectedItemWithHandle_DoesNotRaiseSelectedIndexChanged()
+    {
+        using ListBox owner = new();
+        owner.Items.AddRange((object[])["Original", "Other"]);
+        owner.SelectedIndex = 0;
+        Assert.NotEqual(IntPtr.Zero, owner.Handle);
+        int selectedIndexChangedCallCount = 0;
+        owner.SelectedIndexChanged += (sender, e) => selectedIndexChangedCallCount++;
+
+        owner.Items[0] = "Updated";
+        owner.Items[0] = "Updated";
+
+        Assert.Equal(0, owner.SelectedIndex);
+        Assert.Equal("Updated", owner.SelectedItem);
+        Assert.Equal(0, selectedIndexChangedCallCount);
+
+        owner.SelectedIndex = 1;
+
+        Assert.Equal(1, selectedIndexChangedCallCount);
+    }
+
+    [WinFormsFact]
     public void ListBoxObjectCollection_Item_SetWithOneSelectedItemNotSortedWithHandle_Success()
     {
         using ListBox owner = new();
@@ -953,7 +975,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -964,7 +986,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1026,7 +1048,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1037,7 +1059,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1103,7 +1125,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1114,7 +1136,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1122,10 +1144,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1133,10 +1155,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection same.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1203,7 +1225,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1214,7 +1236,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1222,10 +1244,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -1233,10 +1255,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection same.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7758,7 +7780,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7769,7 +7791,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7831,7 +7853,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7842,7 +7864,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7908,7 +7930,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7919,7 +7941,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7927,10 +7949,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -7938,10 +7960,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection same.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -8008,7 +8030,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(2, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -8019,7 +8041,7 @@ public class ListBoxObjectCollectionTests
         Assert.Equal(new object[] { 2, 3 }, owner.SelectedItems.Cast<object>());
         Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(3, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -8027,10 +8049,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
@@ -8038,10 +8060,10 @@ public class ListBoxObjectCollectionTests
 
         // Set last selection same.
         collection[2] = 4;
-        Assert.Equal(new object[] { 2 }, owner.SelectedItems.Cast<object>());
-        Assert.Equal(new int[] { 1 }, owner.SelectedIndices.Cast<int>());
+        Assert.Equal(new object[] { 2, 4 }, owner.SelectedItems.Cast<object>());
+        Assert.Equal(new int[] { 1, 2 }, owner.SelectedIndices.Cast<int>());
         Assert.Equal(1, owner.SelectedIndex);
-        Assert.Equal(4, selectedIndexChangedCallCount);
+        Assert.Equal(0, selectedIndexChangedCallCount);
         Assert.True(owner.IsHandleCreated);
         Assert.Equal(0, invalidatedCallCount);
         Assert.Equal(0, styleChangedCallCount);
