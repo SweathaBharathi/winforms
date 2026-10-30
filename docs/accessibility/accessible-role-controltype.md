@@ -1,4 +1,4 @@
-# Consistency of AccessibleRole and "ControlType" for accessible objects
+# Consistency of AccessibleRole and "ControlType" for accessible object
 
 This document describes a behavior and relations of `AccessibleRole` property of 
 [controls](https://docs.microsoft.com/dotnet/api/system.windows.forms.control.accessiblerole) and 
