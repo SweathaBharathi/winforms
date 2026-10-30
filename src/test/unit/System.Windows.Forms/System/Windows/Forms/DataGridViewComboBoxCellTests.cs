@@ -3,6 +3,8 @@
 
 using System.ComponentModel;
 using System.Drawing;
+using System.Windows.Forms.VisualStyles;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Windows.Forms.Tests;
 
@@ -14,6 +16,80 @@ public class DataGridViewComboBoxCellTests : IDisposable
 
     public DataGridViewComboBoxCellTests() =>
         _dataGridViewComboBoxCell = new();
+
+    [WinFormsTheory]
+    [InlineData(FlatStyle.Standard, DataGridViewComboBoxDisplayStyle.ComboBox, false)]
+    [InlineData(FlatStyle.Standard, DataGridViewComboBoxDisplayStyle.ComboBox, true)]
+    [InlineData(FlatStyle.System, DataGridViewComboBoxDisplayStyle.ComboBox, false)]
+    [InlineData(FlatStyle.System, DataGridViewComboBoxDisplayStyle.ComboBox, true)]
+    [InlineData(FlatStyle.Standard, DataGridViewComboBoxDisplayStyle.DropDownButton, false)]
+    [InlineData(FlatStyle.Standard, DataGridViewComboBoxDisplayStyle.DropDownButton, true)]
+    [InlineData(FlatStyle.System, DataGridViewComboBoxDisplayStyle.DropDownButton, false)]
+    [InlineData(FlatStyle.System, DataGridViewComboBoxDisplayStyle.DropDownButton, true)]
+    public void Paint_DarkMode_UsesCellForeColor(
+        FlatStyle flatStyle,
+        DataGridViewComboBoxDisplayStyle displayStyle,
+        bool selected)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke((flatStyleValue, displayStyleValue, selectedValue) =>
+        {
+            AppContext.SetSwitch("System.Windows.Forms.DataGridViewDarkModeTheming", true);
+            Application.SetColorMode(SystemColorMode.Dark);
+            Assert.True(Application.IsDarkModeEnabled);
+            Assert.True(DataGridView.ApplyVisualStylesToInnerCells);
+            Assert.True(VisualStyleRenderer.IsElementDefined(VisualStyleElement.ComboBox.ReadOnlyButton.Normal));
+            using DataGridView grid = new() { AllowUserToAddRows = false };
+            grid.Columns.Add(new DataGridViewComboBoxColumn
+            {
+                FlatStyle = (FlatStyle)int.Parse(flatStyleValue),
+                DisplayStyle = (DataGridViewComboBoxDisplayStyle)int.Parse(displayStyleValue)
+            });
+            grid.Rows.Add();
+            grid.CurrentCell = null;
+            using Font font = new(FontFamily.GenericSansSerif, 16, FontStyle.Bold);
+            DataGridViewCellStyle cellStyle = new()
+            {
+                Font = font,
+                ForeColor = Color.Lime,
+                SelectionForeColor = Color.Cyan,
+                Alignment = DataGridViewContentAlignment.MiddleLeft,
+                WrapMode = DataGridViewTriState.False
+            };
+            using Bitmap bitmap = new(160, 50);
+            using Graphics graphics = Graphics.FromImage(bitmap);
+            graphics.Clear(Color.Magenta);
+            Rectangle bounds = new(0, 0, bitmap.Width, bitmap.Height);
+            bool isSelected = bool.Parse(selectedValue);
+
+            grid[0, 0].TestAccessor.Dynamic.Paint(
+                graphics,
+                bounds,
+                bounds,
+                0,
+                isSelected ? DataGridViewElementStates.Selected : DataGridViewElementStates.None,
+                "TEST",
+                "TEST",
+                null,
+                cellStyle,
+                new DataGridViewAdvancedBorderStyle { All = DataGridViewAdvancedCellBorderStyle.None },
+                DataGridViewPaintParts.ContentForeground);
+
+            Color expectedColor = isSelected ? cellStyle.SelectionForeColor : cellStyle.ForeColor;
+            Color unexpectedColor = isSelected ? cellStyle.ForeColor : cellStyle.SelectionForeColor;
+            bool textPainted = false;
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                for (int y = 0; y < bitmap.Height; y++)
+                {
+                    int pixel = bitmap.GetPixel(x, y).ToArgb();
+                    textPainted |= pixel == expectedColor.ToArgb();
+                    Assert.NotEqual(unexpectedColor.ToArgb(), pixel);
+                }
+            }
+
+            Assert.True(textPainted);
+        }, ((int)flatStyle).ToString(), ((int)displayStyle).ToString(), selected.ToString());
+    }
 
     [Fact]
     public void AutoComplete_DefaultValue_IsTrue() =>

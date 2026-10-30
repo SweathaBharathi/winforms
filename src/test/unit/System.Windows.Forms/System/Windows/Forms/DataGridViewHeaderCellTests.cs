@@ -13,6 +13,169 @@ namespace System.Windows.Forms.Tests;
 
 public class DataGridViewHeaderCellTests
 {
+    [WinFormsTheory]
+    [BoolData]
+    public void DataGridViewRowHeaderCell_Paint_DarkMode_UsesCellColors(bool selected)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(selectedValue =>
+        {
+            PaintHeaderInDarkMode(columnHeader: false, bool.Parse(selectedValue));
+        }, selected.ToString());
+    }
+
+    [WinFormsTheory]
+    [BoolData]
+    public void DataGridViewColumnHeaderCell_Paint_DarkMode_UsesCellColors(bool selected)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(selectedValue =>
+        {
+            PaintHeaderInDarkMode(columnHeader: true, bool.Parse(selectedValue));
+        }, selected.ToString());
+    }
+
+    private static void PaintHeaderInDarkMode(bool columnHeader, bool selected)
+    {
+        AppContext.SetSwitch("System.Windows.Forms.DataGridViewDarkModeTheming", true);
+        Application.SetColorMode(SystemColorMode.Dark);
+        Assert.True(Application.IsDarkModeEnabled);
+        using DataGridView grid = new() { AllowUserToAddRows = false };
+        grid.Columns.Add(new DataGridViewTextBoxColumn());
+        grid.Rows.Add();
+        _ = grid.Handle;
+        grid.CurrentCell = null;
+        grid.ClearSelection();
+        Assert.False(grid.EnableHeadersVisualStyles);
+        DataGridViewHeaderCell cell = columnHeader ? grid.Columns[0].HeaderCell : grid.Rows[0].HeaderCell;
+        using Font font = new(FontFamily.GenericSansSerif, 16, FontStyle.Bold);
+        DataGridViewCellStyle cellStyle = new()
+        {
+            Font = font,
+            BackColor = Color.FromArgb(32, 40, 48),
+            ForeColor = Color.Lime,
+            SelectionBackColor = Color.FromArgb(40, 60, 100),
+            SelectionForeColor = Color.Cyan,
+            Alignment = DataGridViewContentAlignment.MiddleLeft,
+            WrapMode = DataGridViewTriState.False
+        };
+        using Bitmap bitmap = new(160, 50);
+        using Graphics graphics = Graphics.FromImage(bitmap);
+        graphics.Clear(Color.Magenta);
+        Rectangle bounds = new(0, 0, bitmap.Width, bitmap.Height);
+        DataGridViewElementStates state = selected ? DataGridViewElementStates.Selected : DataGridViewElementStates.None;
+        DataGridViewAdvancedBorderStyle borderStyle = new() { All = DataGridViewAdvancedCellBorderStyle.None };
+
+        cell.TestAccessor.Dynamic.Paint(
+            graphics, bounds, bounds, cell.RowIndex, state, "TEST", "TEST", null,
+            cellStyle, borderStyle, DataGridViewPaintParts.ContentForeground);
+
+        Color expectedForeColor = selected ? cellStyle.SelectionForeColor : cellStyle.ForeColor;
+        Color unexpectedForeColor = selected ? cellStyle.ForeColor : cellStyle.SelectionForeColor;
+        bool textPainted = false;
+        for (int x = 0; x < bitmap.Width; x++)
+        {
+            for (int y = 0; y < bitmap.Height; y++)
+            {
+                int pixel = bitmap.GetPixel(x, y).ToArgb();
+                textPainted |= pixel == expectedForeColor.ToArgb();
+                Assert.NotEqual(unexpectedForeColor.ToArgb(), pixel);
+            }
+        }
+
+        Assert.True(textPainted);
+        graphics.Clear(Color.Magenta);
+
+        cell.TestAccessor.Dynamic.Paint(
+            graphics, bounds, bounds, cell.RowIndex, state, string.Empty, string.Empty, null,
+            cellStyle, borderStyle, DataGridViewPaintParts.Background | DataGridViewPaintParts.SelectionBackground);
+
+        Color expectedBackColor = selected ? cellStyle.SelectionBackColor : cellStyle.BackColor;
+        Assert.Equal(expectedBackColor.ToArgb(), bitmap.GetPixel(40, 25).ToArgb());
+    }
+
+    [WinFormsTheory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void DataGridViewHeaderCell_CreateHandle_DarkMode_RespectsThemingSwitch(bool darkMode, bool themingEnabled)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke((darkModeValue, themingEnabledValue) =>
+        {
+            bool useDarkTheming = bool.Parse(darkModeValue) && bool.Parse(themingEnabledValue);
+            AppContext.SetSwitch("System.Windows.Forms.DataGridViewDarkModeTheming", bool.Parse(themingEnabledValue));
+            Application.SetColorMode(bool.Parse(darkModeValue) ? SystemColorMode.Dark : SystemColorMode.Classic);
+            using DataGridView grid = new() { AllowUserToAddRows = false };
+            grid.Columns.Add(new DataGridViewTextBoxColumn());
+            grid.Rows.Add();
+            DataGridViewCellStyle originalColumnStyle = grid.ColumnHeadersDefaultCellStyle.Clone();
+            DataGridViewCellStyle originalRowStyle = grid.RowHeadersDefaultCellStyle.Clone();
+
+            _ = grid.Handle;
+
+            Assert.Equal(!useDarkTheming, grid.EnableHeadersVisualStyles);
+            Assert.Equal(
+                useDarkTheming ? SystemColors.ControlDarkDark : originalColumnStyle.BackColor,
+                grid.ColumnHeadersDefaultCellStyle.BackColor);
+            Assert.Equal(
+                useDarkTheming ? SystemColors.ActiveCaptionText : originalColumnStyle.ForeColor,
+                grid.ColumnHeadersDefaultCellStyle.ForeColor);
+            Assert.Equal(
+                useDarkTheming ? SystemColors.ControlDarkDark : originalRowStyle.BackColor,
+                grid.RowHeadersDefaultCellStyle.BackColor);
+            Assert.Equal(
+                useDarkTheming ? SystemColors.ActiveCaptionText : originalRowStyle.ForeColor,
+                grid.RowHeadersDefaultCellStyle.ForeColor);
+            if (useDarkTheming)
+            {
+                Assert.Equal(grid.DefaultCellStyle.SelectionBackColor, grid.Columns[0].HeaderCell.InheritedStyle.SelectionBackColor);
+                Assert.Equal(grid.DefaultCellStyle.SelectionBackColor, grid.Rows[0].HeaderCell.InheritedStyle.SelectionBackColor);
+            }
+        }, darkMode.ToString(), themingEnabled.ToString());
+    }
+
+    [WinFormsTheory]
+    [InlineData(SortOrder.Ascending, false)]
+    [InlineData(SortOrder.Ascending, true)]
+    [InlineData(SortOrder.Descending, false)]
+    [InlineData(SortOrder.Descending, true)]
+    public void DataGridViewColumnHeaderCell_Paint_DarkMode_UsesSortGlyphColor(SortOrder direction, bool customColor)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke((directionValue, customColorValue) =>
+        {
+            AppContext.SetSwitch("System.Windows.Forms.DataGridViewDarkModeTheming", true);
+            Application.SetColorMode(SystemColorMode.Dark);
+            Assert.True(Application.IsDarkModeEnabled);
+            using DataGridView grid = new() { AllowUserToAddRows = false };
+            grid.Columns.Add(new DataGridViewTextBoxColumn { SortMode = DataGridViewColumnSortMode.Automatic });
+            _ = grid.Handle;
+            DataGridViewColumnHeaderCell cell = grid.Columns[0].HeaderCell;
+            cell.SortGlyphDirection = (SortOrder)int.Parse(directionValue);
+            DataGridViewCellStyle cellStyle = cell.InheritedStyle;
+            cellStyle.SortGlyphColor = bool.Parse(customColorValue) ? Color.Yellow : Color.Empty;
+            using Bitmap bitmap = new(160, 50);
+            using Graphics graphics = Graphics.FromImage(bitmap);
+            graphics.Clear(Color.Magenta);
+            Rectangle bounds = new(0, 0, bitmap.Width, bitmap.Height);
+
+            cell.TestAccessor.Dynamic.Paint(
+                graphics, bounds, bounds, -1, DataGridViewElementStates.None, string.Empty, string.Empty, null,
+                cellStyle, new DataGridViewAdvancedBorderStyle { All = DataGridViewAdvancedCellBorderStyle.None },
+                DataGridViewPaintParts.ContentBackground);
+
+            Color expectedColor = cellStyle.SortGlyphColor.IsEmpty ? Color.White : cellStyle.SortGlyphColor;
+            bool glyphPainted = false;
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                for (int y = 0; y < bitmap.Height; y++)
+                {
+                    glyphPainted |= bitmap.GetPixel(x, y).ToArgb() == expectedColor.ToArgb();
+                }
+            }
+
+            Assert.True(glyphPainted);
+        }, ((int)direction).ToString(), customColor.ToString());
+    }
+
     [WinFormsFact]
     public void DataGridViewHeaderCell_Ctor_Default()
     {

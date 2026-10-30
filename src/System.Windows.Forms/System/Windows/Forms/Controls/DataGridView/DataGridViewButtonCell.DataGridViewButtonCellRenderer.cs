@@ -37,8 +37,7 @@ public partial class DataGridViewButtonCell
                 using var backBrush = backColor.GetCachedSolidBrushScope();
                 g.FillRectangle(backBrush, bounds);
 
-                PushButtonState pbState = (PushButtonState)(buttonState & ~(int)PushButtonState.Default);
-                Color borderColor = pbState switch
+                Color borderColor = ((PushButtonState)buttonState) switch
                 {
                     PushButtonState.Pressed => ControlPaint.Light(backColor, 0.3f),
                     PushButtonState.Hot => ControlPaint.Light(backColor, 0.2f),

@@ -728,12 +728,13 @@ public partial class DataGridViewButtonCell : DataGridViewCell
                                 pbState = PushButtonState.Hot;
                             }
 
-                            if (PaintFocus(paintParts) && cellCurrent && DataGridView.ShowFocusCues && DataGridView.Focused)
+                            if (PaintFocus(paintParts) && cellCurrent && DataGridView.ShowFocusCues && DataGridView.Focused &&
+                                !(Application.IsDarkModeEnabled && AppContextSwitches.DataGridViewDarkModeTheming))
                             {
                                 pbState |= PushButtonState.Default;
                             }
 
-                            DataGridViewButtonCellRenderer.DrawButton(g, valBounds, (int)pbState, cellStyle.BackColor);
+                            DataGridViewButtonCellRenderer.DrawButton(g, valBounds, (int)pbState, backBrushColor);
                         }
 
                         resultBounds = valBounds;

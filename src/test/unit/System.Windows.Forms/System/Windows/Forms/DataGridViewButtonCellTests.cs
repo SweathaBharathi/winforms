@@ -2,18 +2,224 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Drawing;
+using System.Globalization;
 using System.Reflection;
 using System.Windows.Forms.VisualStyles;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Windows.Forms.Tests;
 
 public class DataGridViewButtonCellTests : IDisposable
 {
+    private const string DarkModeThemingSwitch = "System.Windows.Forms.DataGridViewDarkModeTheming";
     private readonly DataGridViewButtonCell _dataGridViewButtonCell;
 
     public void Dispose() => _dataGridViewButtonCell?.Dispose();
 
     public DataGridViewButtonCellTests() => _dataGridViewButtonCell = new();
+
+    [WinFormsTheory]
+    [InlineData(PushButtonState.Normal, 0.1f)]
+    [InlineData(PushButtonState.Hot, 0.2f)]
+    [InlineData(PushButtonState.Pressed, 0.3f)]
+    [InlineData(PushButtonState.Disabled, 0.1f)]
+    public void ButtonRenderer_DarkMode_PaintsBackgroundAndStateBorder(PushButtonState state, float lightening)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke((stateValue, lighteningValue) =>
+        {
+            EnableDarkMode();
+            using Bitmap bitmap = new(60, 50);
+            using Graphics graphics = Graphics.FromImage(bitmap);
+            graphics.Clear(Color.Magenta);
+            Rectangle bounds = new(5, 7, 40, 30);
+            Color backColor = Color.FromArgb(32, 40, 48);
+            Color borderColor = ControlPaint.Light(backColor, float.Parse(lighteningValue, CultureInfo.InvariantCulture));
+
+            DrawButton(graphics, bounds, (PushButtonState)int.Parse(stateValue), backColor);
+
+            Assert.Equal(backColor.ToArgb(), bitmap.GetPixel(20, 20).ToArgb());
+            Assert.Equal(borderColor.ToArgb(), bitmap.GetPixel(bounds.Left, bounds.Top).ToArgb());
+            Assert.Equal(borderColor.ToArgb(), bitmap.GetPixel(bounds.Right - 1, bounds.Bottom - 1).ToArgb());
+            Assert.Equal(Color.Magenta.ToArgb(), bitmap.GetPixel(bounds.Right, bounds.Bottom).ToArgb());
+        }, ((int)state).ToString(), lightening.ToString(CultureInfo.InvariantCulture));
+    }
+
+    [WinFormsTheory]
+    [InlineData(FlatStyle.Standard, false, true)]
+    [InlineData(FlatStyle.Standard, true, true)]
+    [InlineData(FlatStyle.System, false, true)]
+    [InlineData(FlatStyle.System, true, true)]
+    [InlineData(FlatStyle.Standard, true, false)]
+    [InlineData(FlatStyle.System, true, false)]
+    public void Paint_DarkMode_UsesCellColors(FlatStyle flatStyle, bool selected, bool paintSelectionBackground)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke((flatStyleValue, selectedValue, paintSelectionValue) =>
+        {
+            EnableDarkMode();
+            Assert.True(DataGridView.ApplyVisualStylesToInnerCells);
+            using DataGridView grid = new() { AllowUserToAddRows = false };
+            grid.Columns.Add(new DataGridViewButtonColumn { FlatStyle = (FlatStyle)int.Parse(flatStyleValue) });
+            grid.Rows.Add();
+            grid.CurrentCell = null;
+            using Font font = new(FontFamily.GenericSansSerif, 16, FontStyle.Bold);
+            DataGridViewCellStyle cellStyle = new()
+            {
+                Font = font,
+                BackColor = Color.FromArgb(32, 40, 48),
+                ForeColor = Color.Lime,
+                SelectionBackColor = Color.FromArgb(40, 60, 100),
+                SelectionForeColor = Color.Cyan,
+                Alignment = DataGridViewContentAlignment.MiddleLeft,
+                WrapMode = DataGridViewTriState.False
+            };
+            using Bitmap bitmap = new(160, 50);
+            using Graphics graphics = Graphics.FromImage(bitmap);
+            graphics.Clear(Color.Magenta);
+            bool isSelected = bool.Parse(selectedValue);
+
+            PaintButtonCell(grid[0, 0], graphics, cellStyle, isSelected, DataGridViewPaintParts.ContentForeground, "TEST");
+
+            Color expectedForeColor = isSelected ? cellStyle.SelectionForeColor : cellStyle.ForeColor;
+            Color unexpectedForeColor = isSelected ? cellStyle.ForeColor : cellStyle.SelectionForeColor;
+            bool textPainted = false;
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                for (int y = 0; y < bitmap.Height; y++)
+                {
+                    int pixel = bitmap.GetPixel(x, y).ToArgb();
+                    textPainted |= pixel == expectedForeColor.ToArgb();
+                    Assert.NotEqual(unexpectedForeColor.ToArgb(), pixel);
+                }
+            }
+
+            Assert.True(textPainted);
+            graphics.Clear(Color.Magenta);
+            bool paintSelection = bool.Parse(paintSelectionValue);
+            DataGridViewPaintParts paintParts = DataGridViewPaintParts.Background | DataGridViewPaintParts.ContentBackground;
+            if (paintSelection)
+            {
+                paintParts |= DataGridViewPaintParts.SelectionBackground;
+            }
+
+            PaintButtonCell(grid[0, 0], graphics, cellStyle, isSelected, paintParts, string.Empty);
+
+            Color expectedBackColor = isSelected && paintSelection ? cellStyle.SelectionBackColor : cellStyle.BackColor;
+            Assert.Equal(expectedBackColor.ToArgb(), bitmap.GetPixel(40, 25).ToArgb());
+        }, ((int)flatStyle).ToString(), selected.ToString(), paintSelectionBackground.ToString());
+    }
+
+    [WinFormsTheory]
+    [InlineData(FlatStyle.Standard)]
+    [InlineData(FlatStyle.System)]
+    public void Paint_DarkMode_FocusedPressedStateIsPreserved(FlatStyle flatStyle)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(flatStyleValue =>
+        {
+            EnableDarkMode();
+            Assert.True(DataGridView.ApplyVisualStylesToInnerCells);
+            using FocusedDataGridView grid = new() { AllowUserToAddRows = false };
+            grid.Columns.Add(new DataGridViewButtonColumn { FlatStyle = (FlatStyle)int.Parse(flatStyleValue) });
+            grid.Rows.Add();
+            grid.CurrentCell = grid[0, 0];
+            Assert.True(grid.Focused);
+            Assert.True((bool)grid.TestAccessor.Dynamic.ShowFocusCues);
+            grid[0, 0].TestAccessor.Dynamic.ButtonState = ButtonState.Pushed;
+            DataGridViewCellStyle cellStyle = grid[0, 0].InheritedStyle;
+            cellStyle.BackColor = Color.FromArgb(32, 40, 48);
+            using Bitmap bitmap = new(160, 50);
+            using Graphics graphics = Graphics.FromImage(bitmap);
+            graphics.Clear(Color.Magenta);
+
+            PaintButtonCell(
+                grid[0, 0],
+                graphics,
+                cellStyle,
+                selected: false,
+                DataGridViewPaintParts.ContentBackground | DataGridViewPaintParts.Focus,
+                string.Empty);
+
+            Assert.Equal(ControlPaint.Light(cellStyle.BackColor, 0.3f).ToArgb(), bitmap.GetPixel(0, 0).ToArgb());
+        }, ((int)flatStyle).ToString());
+    }
+
+    [WinFormsTheory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    public void ButtonRenderer_DarkModeInactive_UsesVisualStyle(bool darkMode, bool themingEnabled)
+    {
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke((darkModeValue, themingEnabledValue) =>
+        {
+            AppContext.SetSwitch(DarkModeThemingSwitch, bool.Parse(themingEnabledValue));
+            Application.SetColorMode(bool.Parse(darkModeValue) ? SystemColorMode.Dark : SystemColorMode.Classic);
+            Assert.True(DataGridView.ApplyVisualStylesToInnerCells);
+            Rectangle bounds = new(0, 0, 40, 30);
+            using Bitmap actual = new(bounds.Width, bounds.Height);
+            using Bitmap expected = new(bounds.Width, bounds.Height);
+            using Graphics actualGraphics = Graphics.FromImage(actual);
+            using Graphics expectedGraphics = Graphics.FromImage(expected);
+            VisualStyleRenderer renderer = new(VisualStyleElement.Button.PushButton.Pressed);
+
+            DrawButton(actualGraphics, bounds, PushButtonState.Pressed, Color.Magenta);
+            renderer.DrawBackground(expectedGraphics, bounds, Rectangle.Truncate(expectedGraphics.ClipBounds));
+
+            for (int x = 0; x < bounds.Width; x++)
+            {
+                for (int y = 0; y < bounds.Height; y++)
+                {
+                    Assert.Equal(expected.GetPixel(x, y), actual.GetPixel(x, y));
+                }
+            }
+        }, darkMode.ToString(), themingEnabled.ToString());
+    }
+
+    private static void EnableDarkMode()
+    {
+        // Isolate process-wide colors and system-event broadcasts using RemoteExecutor.
+        AppContext.SetSwitch(DarkModeThemingSwitch, true);
+        Application.SetColorMode(SystemColorMode.Dark);
+        Assert.True(Application.IsDarkModeEnabled);
+    }
+
+    private static void DrawButton(Graphics graphics, Rectangle bounds, PushButtonState state, Color backColor)
+    {
+        Type rendererType = typeof(DataGridViewButtonCell).GetNestedType("DataGridViewButtonCellRenderer", BindingFlags.NonPublic)!;
+        MethodInfo drawButton = rendererType.GetMethod(
+            "DrawButton",
+            [typeof(Graphics), typeof(Rectangle), typeof(int), typeof(Color)])!;
+        drawButton.Invoke(null, [graphics, bounds, (int)state, backColor]);
+    }
+
+    private static void PaintButtonCell(
+        DataGridViewCell cell,
+        Graphics graphics,
+        DataGridViewCellStyle cellStyle,
+        bool selected,
+        DataGridViewPaintParts paintParts,
+        string text)
+    {
+        Rectangle bounds = new(0, 0, 160, 50);
+        cell.TestAccessor.Dynamic.Paint(
+            graphics,
+            bounds,
+            bounds,
+            cell.RowIndex,
+            selected ? DataGridViewElementStates.Selected : DataGridViewElementStates.None,
+            text,
+            text,
+            null,
+            cellStyle,
+            new DataGridViewAdvancedBorderStyle { All = DataGridViewAdvancedCellBorderStyle.None },
+            paintParts);
+    }
+
+    /// <summary>
+    ///  Simulates focus without showing a window or taking focus from another application.
+    /// </summary>
+    private sealed class FocusedDataGridView : DataGridView
+    {
+        public override bool Focused => true;
+    }
 
     [Fact]
     public void FormattedValueType_ReturnsStringType()
@@ -481,133 +687,6 @@ public class DataGridViewButtonCellTests : IDisposable
 
         _dataGridViewButtonCell.DataGridView.Should().BeSameAs(dataGridView);
         dataGridViewCellStyle.Font.Should().Be(SystemFonts.DefaultFont);
-    }
-
-    [WinFormsFact]
-    public void DataGridViewButtonCellRenderer_DrawButton_DarkModeEnabled_FillsWithCellBackColor()
-    {
-        // Regression test for https://github.com/dotnet/winforms/issues/11893:
-        // Button-type DataGridView cells kept the light "Button" visual style face color
-        // even when the application (and the rest of the grid) was themed for Dark Mode,
-        // because DataGridViewButtonCellRenderer.DrawButton always rendered the light-themed
-        // "Button" visual style element, ignoring Application.IsDarkModeEnabled.
-        //
-        // The renderer is invoked directly (via reflection) so this test is independent of
-        // DataGridView.ApplyVisualStylesToInnerCells (Application.RenderWithVisualStyles),
-        // which requires a common-controls-v6 manifest that isn't present in the test host.
-        SystemColorMode originalColorMode = Application.ColorMode;
-        try
-        {
-            Application.SetColorMode(SystemColorMode.Dark);
-
-            Type rendererType = typeof(DataGridViewButtonCell).GetNestedType(
-                "DataGridViewButtonCellRenderer",
-                BindingFlags.NonPublic)!;
-            MethodInfo drawButton = rendererType.GetMethod(
-                "DrawButton",
-                BindingFlags.Public | BindingFlags.Static,
-                binder: null,
-                types: [typeof(Graphics), typeof(Rectangle), typeof(int), typeof(Color)],
-                modifiers: null)!;
-
-            using Bitmap bitmap = new(40, 40);
-            using Graphics g = Graphics.FromImage(bitmap);
-            Color darkBackColor = Color.FromArgb(32, 32, 32);
-            Rectangle bounds = new(0, 0, 40, 40);
-
-            drawButton.Invoke(null, [g, bounds, (int)PushButtonState.Normal, darkBackColor]);
-
-            Color pixel = bitmap.GetPixel(20, 20);
-
-            // The button content area should be filled using the cell's dark BackColor
-            // rather than the light system "Button" visual style face color.
-            pixel.Should().Be(darkBackColor);
-        }
-        finally
-        {
-            Application.SetColorMode(originalColorMode);
-        }
-    }
-
-    [WinFormsFact]
-    public void Paint_DarkModeEnabled_SystemFlatStyle_UsesCellForeColorForButtonText()
-    {
-        // Regression test for https://github.com/dotnet/winforms/issues/11893:
-        // With FlatStyle.System/Standard and visual styles applied, the button text color was
-        // always read from the "Button" visual style element (DataGridViewButtonRenderer.GetColor),
-        // which reflects the light system theme regardless of Application.IsDarkModeEnabled. This
-        // produced near-black text on the dark background painted for the button cell.
-        //
-        // This code path only runs when DataGridView.ApplyVisualStylesToInnerCells is true, which
-        // requires common-controls-v6 theming support in the test host; skip otherwise, matching
-        // the existing GetPreferredSize_UsesThemeMargins_WhenVisualStylesApplied test's pattern.
-        if (!DataGridView.ApplyVisualStylesToInnerCells)
-        {
-            return;
-        }
-
-        SystemColorMode originalColorMode = Application.ColorMode;
-        try
-        {
-            Application.SetColorMode(SystemColorMode.Dark);
-
-            using Bitmap bitmap = new(60, 20);
-            using Graphics g = Graphics.FromImage(bitmap);
-            using DataGridView dataGridView = new();
-            dataGridView.Columns.Add(new DataGridViewButtonColumn { FlatStyle = FlatStyle.System });
-            dataGridView.Rows.Add();
-            dataGridView[0, 0] = _dataGridViewButtonCell;
-
-            Color lightForeColor = Color.White;
-            DataGridViewCellStyle dataGridViewCellStyle = new()
-            {
-                Font = SystemFonts.DefaultFont,
-                BackColor = Color.FromArgb(32, 32, 32),
-                ForeColor = lightForeColor
-            };
-            DataGridViewAdvancedBorderStyle advancedBorderStyle = new();
-
-            _dataGridViewButtonCell.TestAccessor.Dynamic.Paint(
-                g,
-                new Rectangle(0, 0, 60, 20),
-                new Rectangle(0, 0, 60, 20),
-                0,
-                DataGridViewElementStates.None,
-                "value",
-                "OK",
-                null,
-                dataGridViewCellStyle,
-                advancedBorderStyle,
-                DataGridViewPaintParts.All);
-
-            // Find the darkest pixel painted in the cell's interior (excluding a margin around
-            // the edges to avoid sampling the button border) and assert it is light/legible
-            // rather than near-black. The background is a known dark color (luminance 32), so if
-            // text is still painted with the near-black visual-style text color, the darkest
-            // interior pixel will be substantially darker than the background.
-            const int margin = 6;
-            byte minLuminance = byte.MaxValue;
-            for (int x = margin; x < bitmap.Width - margin; x++)
-            {
-                for (int y = margin; y < bitmap.Height - margin; y++)
-                {
-                    Color c = bitmap.GetPixel(x, y);
-                    byte luminance = (byte)((c.R + c.G + c.B) / 3);
-                    if (luminance < minLuminance)
-                    {
-                        minLuminance = luminance;
-                    }
-                }
-            }
-
-            // The text should be drawn using the light ForeColor, so the darkest interior pixel
-            // should be no darker than the (already dark) cell background.
-            minLuminance.Should().BeGreaterThanOrEqualTo((byte)28);
-        }
-        finally
-        {
-            Application.SetColorMode(originalColorMode);
-        }
     }
 
     [Fact]
